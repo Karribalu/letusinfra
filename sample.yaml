@@ -1,0 +1,17 @@
+version: v1
+kind: Infra
+metadata:
+  name: sample
+components:
+  - type: ECSCluster
+    name: sample-cluster
+    properties:
+      cluster_name: sample-cluster
+      size: 3
+
+  - type: S3Bucket
+    name: sample-bucket
+    properties:
+      bucket_name: sample-bucket
+      versioning: true
+      encryption: AES256
