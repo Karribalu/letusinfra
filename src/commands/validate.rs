@@ -1,4 +1,6 @@
-use serde_core::de::Deserialize;
+use crate::models::InfraConfig;
+use crate::utils::constants;
+
 #[derive(clap::Args, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Config {
@@ -25,19 +27,64 @@ pub fn execute(config: &Config) {
     }
 }
 
-pub fn validate_file(file_path: &str) -> bool {
-    let content = std::fs::read_to_string(file_path).ok().unwrap();
-    let deserializer = serde_yaml::Deserializer::from_str(&content);
+pub struct YamlSchema {
+    pub kind: constants::SupportKind,
+    pub name: String,
+}
 
-    for document in deserializer {
-        let value: serde_yaml::Value = match serde_yaml::Value::deserialize(document) {
-            Ok(val) => val,
-            Err(err) => {
-                eprintln!("Failed to deserialize YAML document: {}", err);
-                return false;
-            }
-        };
-        println!("Parsed YAML document: {:?}", value);
+pub fn validate_file(file_path: &str) -> bool {
+    let content = match std::fs::read_to_string(file_path) {
+        Ok(content) => content,
+        Err(err) => {
+            eprintln!("Failed to read file: {}", err);
+            return false;
+        }
+    };
+
+    // Try to parse using the structured model
+    match InfraConfig::from_yaml(&content) {
+        Ok(config) => {
+            println!("Successfully parsed YAML using InfraConfig model");
+            return validate_infra_config(&config);
+        }
+        Err(err) => {
+            eprintln!("Failed to parse YAML into InfraConfig: {}", err);
+        }
     }
+
+    true
+}
+
+pub fn validate_infra_config(config: &InfraConfig) -> bool {
+    // Validate kind
+    if !constants::SupportKind::is_valid(&config.kind) {
+        eprintln!("Invalid kind: {}", config.kind);
+        return false;
+    }
+
+    // Validate metadata
+    if config.metadata.name.is_empty() {
+        eprintln!("Metadata name cannot be empty");
+        return false;
+    }
+
+    // Validate components
+    if config.components.is_empty() {
+        eprintln!("At least one component is required");
+        return false;
+    }
+
+    for (idx, component) in config.components.iter().enumerate() {
+        if component.component_type.is_empty() {
+            eprintln!("Component {} has empty type", idx);
+            return false;
+        }
+        if component.name.is_empty() {
+            eprintln!("Component {} has empty name", idx);
+            return false;
+        }
+    }
+
+    println!("InfraConfig validation passed");
     true
 }

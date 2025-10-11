@@ -1,5 +1,6 @@
 use clap::Parser;
-
+mod models;
+mod utils;
 pub mod commands {
     pub mod validate;
 }
