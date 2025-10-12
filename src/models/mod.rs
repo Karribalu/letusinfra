@@ -5,6 +5,8 @@ use std::collections::HashMap;
 pub struct InfraConfig {
     pub version: String,
     pub kind: String,
+    pub cloud: String,
+    pub region: String,
     pub metadata: Metadata,
     pub components: Vec<Component>,
 }

@@ -1,0 +1,12 @@
+version: v1
+kind: Infra
+cloud: AWS
+region: us-west-2
+metadata:
+  name: ec2-sample
+components:
+  - type: EC2Instance
+    name: ec2-sample-instance
+    properties:
+      instance_type: t2.micro
+      ami: ami-04c174f38aefd7dc8

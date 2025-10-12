@@ -26,12 +26,6 @@ pub fn execute(config: &Config) {
         println!("YAML file is invalid.");
     }
 }
-
-pub struct YamlSchema {
-    pub kind: constants::SupportKind,
-    pub name: String,
-}
-
 pub fn validate_file(file_path: &str) -> bool {
     let content = match std::fs::read_to_string(file_path) {
         Ok(content) => content,
@@ -59,6 +53,11 @@ pub fn validate_infra_config(config: &InfraConfig) -> bool {
     // Validate kind
     if !constants::SupportKind::is_valid(&config.kind) {
         eprintln!("Invalid kind: {}", config.kind);
+        return false;
+    }
+
+    if !constants::SupportCloud::is_valid(&config.cloud) {
+        eprintln!("Invalid cloud: {}", config.cloud);
         return false;
     }
 
