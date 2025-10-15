@@ -39,7 +39,7 @@ pub fn execute(config: &Config) {
     match InfraConfig::from_yaml(&content) {
         Ok(config) => {
             println!("Successfully parsed YAML using InfraConfig model");
-            create_components(&config.region, &config.components);
+            create_components(&config.metadata.name, &config.region, &config.components);
         }
         Err(err) => {
             eprintln!("Failed to parse YAML into InfraConfig: {}", err);
@@ -47,12 +47,12 @@ pub fn execute(config: &Config) {
     }
 }
 
-fn create_components(region: &str, components: &[crate::models::Component]) {
+fn create_components(name: &str, region: &str, components: &[crate::models::Component]) {
     for component in components {
         match component.component_type.as_str() {
             "EC2Instance" => {
                 // Create EC2 instance Terraform code
-                create_ec2_instance(region, component);
+                create_ec2_instance(name, region, component);
             }
             _ => {
                 eprintln!("Unsupported component type: {}", component.component_type);
@@ -61,7 +61,7 @@ fn create_components(region: &str, components: &[crate::models::Component]) {
     }
 }
 
-fn create_ec2_instance(region: &str, component: &crate::models::Component) {
+fn create_ec2_instance(deployment_name: &str, region: &str, component: &crate::models::Component) {
     let name = &component.name;
     let instance_type = component
         .get_property_as_string("instanceType")
@@ -74,7 +74,7 @@ fn create_ec2_instance(region: &str, component: &crate::models::Component) {
     let temp_dir = std::env::current_dir()
         .expect("Unable to get current directory")
         .join("workspaces")
-        .join(name);
+        .join(deployment_name);
 
     // Copy the template files to a new directory for this component from TEMPLATES_DIR
     let component_dir = temp_dir.join(format!("{}_{}", name, "EC2Instance"));
