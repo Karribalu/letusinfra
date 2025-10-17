@@ -1,6 +1,7 @@
 use aws_sdk_ec2::{error::ProvideErrorMetadata, types as ec2_types};
+use tracing::info;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InstanceOpts {
     block_device_mappings: Option<Vec<ec2_types::BlockDeviceMapping>>,
     capacity_reservation_specification: Option<ec2_types::CapacityReservationSpecification>,
@@ -13,10 +14,10 @@ pub struct InstanceOpts {
     enable_primary_ipv6: Option<bool>,
     hibernation_options: Option<ec2_types::HibernationOptionsRequest>,
     iam_instance_profile: Option<ec2_types::IamInstanceProfileSpecification>,
-    image_id: String,
+    pub(crate) image_id: String,
     instance_initiated_shutdown_behavior: Option<String>,
     instance_market_options: Option<ec2_types::InstanceMarketOptionsRequest>,
-    instance_type: ec2_types::InstanceType,
+    pub(crate) instance_type: ec2_types::InstanceType,
     ipv6_address_count: Option<i32>,
     ipv6_addresses: Option<Vec<ec2_types::InstanceIpv6Address>>,
     key_name: Option<String>,
@@ -74,7 +75,7 @@ impl EC2Instance {
         EC2Instance { client }
     }
 
-    fn opts_from_yaml(yaml: &serde_yaml::Value) -> Result<InstanceOpts, EC2Error> {
+    pub(crate) fn opts_from_yaml(yaml: &serde_yaml::Value) -> Result<InstanceOpts, EC2Error> {
         // Helper function to get string from yaml
         let get_string = |yaml: &serde_yaml::Value, key: &str| -> Option<String> {
             yaml.get(key)?.as_str().map(|s| s.to_string())
@@ -510,350 +511,121 @@ impl EC2Instance {
 
     pub async fn create_instance(
         &self,
-        config: InstanceOpts,
+        config: &InstanceOpts,
     ) -> Result<Vec<aws_sdk_ec2::types::Instance>, EC2Error> {
+        let config_clone = config.clone();
         let mut request = self
             .client
             .run_instances()
-            .image_id(config.image_id)
-            .instance_type(config.instance_type)
-            .min_count(config.min_count)
-            .max_count(config.max_count);
+            .image_id(config_clone.image_id)
+            .instance_type(config_clone.instance_type)
+            .min_count(config_clone.min_count)
+            .max_count(config_clone.max_count);
 
         // Add optional parameters
-        if let Some(block_device_mappings) = config.block_device_mappings {
+        if let Some(block_device_mappings) = config_clone.block_device_mappings {
             request = request.set_block_device_mappings(Some(block_device_mappings));
         }
-        if let Some(capacity_reservation_specification) = config.capacity_reservation_specification
+        if let Some(capacity_reservation_specification) = config_clone.capacity_reservation_specification
         {
             request =
                 request.capacity_reservation_specification(capacity_reservation_specification);
         }
-        if let Some(client_token) = config.client_token {
+        if let Some(client_token) = config_clone.client_token {
             request = request.client_token(client_token);
         }
-        if let Some(cpu_options) = config.cpu_options {
+        if let Some(cpu_options) = config_clone.cpu_options {
             request = request.cpu_options(cpu_options);
         }
-        if let Some(credit_specification) = config.credit_specification {
+        if let Some(credit_specification) = config_clone.credit_specification {
             request = request.credit_specification(credit_specification);
         }
-        if let Some(disable_api_termination) = config.disable_api_termination {
+        if let Some(disable_api_termination) = config_clone.disable_api_termination {
             request = request.disable_api_termination(disable_api_termination);
         }
-        if let Some(ebs_optimized) = config.ebs_optimized {
+        if let Some(ebs_optimized) = config_clone.ebs_optimized {
             request = request.ebs_optimized(ebs_optimized);
         }
-        if let Some(enclave_options) = config.enclave_options {
+        if let Some(enclave_options) = config_clone.enclave_options {
             request = request.enclave_options(enclave_options);
         }
-        if let Some(enable_primary_ipv6) = config.enable_primary_ipv6 {
+        if let Some(enable_primary_ipv6) = config_clone.enable_primary_ipv6 {
             request = request.enable_primary_ipv6(enable_primary_ipv6);
         }
-        if let Some(hibernation_options) = config.hibernation_options {
+        if let Some(hibernation_options) = config_clone.hibernation_options {
             request = request.hibernation_options(hibernation_options);
         }
-        if let Some(iam_instance_profile) = config.iam_instance_profile {
+        if let Some(iam_instance_profile) = config_clone.iam_instance_profile {
             request = request.iam_instance_profile(iam_instance_profile);
         }
         if let Some(instance_initiated_shutdown_behavior) =
-            config.instance_initiated_shutdown_behavior
+            config_clone.instance_initiated_shutdown_behavior
         {
             request = request.instance_initiated_shutdown_behavior(
                 ec2_types::ShutdownBehavior::from(instance_initiated_shutdown_behavior.as_str()),
             );
         }
-        if let Some(instance_market_options) = config.instance_market_options {
+        if let Some(instance_market_options) = config_clone.instance_market_options {
             request = request.instance_market_options(instance_market_options);
         }
-        if let Some(ipv6_address_count) = config.ipv6_address_count {
+        if let Some(ipv6_address_count) = config_clone.ipv6_address_count {
             request = request.ipv6_address_count(ipv6_address_count);
         }
-        if let Some(ipv6_addresses) = config.ipv6_addresses {
+        if let Some(ipv6_addresses) = config_clone.ipv6_addresses {
             request = request.set_ipv6_addresses(Some(ipv6_addresses));
         }
-        if let Some(key_name) = config.key_name {
+        if let Some(key_name) = config_clone.key_name {
             request = request.key_name(key_name);
         }
-        if let Some(launch_template) = config.launch_template {
+        if let Some(launch_template) = config_clone.launch_template {
             request = request.launch_template(launch_template);
         }
-        if let Some(maintenance_options) = config.maintenance_options {
+        if let Some(maintenance_options) = config_clone.maintenance_options {
             request = request.maintenance_options(maintenance_options);
         }
-        if let Some(metadata_options) = config.metadata_options {
+        if let Some(metadata_options) = config_clone.metadata_options {
             request = request.metadata_options(metadata_options);
         }
-        if let Some(monitoring) = config.monitoring {
+        if let Some(monitoring) = config_clone.monitoring {
             request = request.monitoring(monitoring);
         }
-        if let Some(network_interfaces) = config.network_interfaces {
+        if let Some(network_interfaces) = config_clone.network_interfaces {
             request = request.set_network_interfaces(Some(network_interfaces));
         }
-        if let Some(placement) = config.placement {
+        if let Some(placement) = config_clone.placement {
             request = request.placement(placement);
         }
-        if let Some(private_dns_name_options) = config.private_dns_name_options {
+        if let Some(private_dns_name_options) = config_clone.private_dns_name_options {
             request = request.private_dns_name_options(private_dns_name_options);
         }
-        if let Some(private_ip_address) = config.private_ip_address {
+        if let Some(private_ip_address) = config_clone.private_ip_address {
             request = request.private_ip_address(private_ip_address);
         }
-        if let Some(security_group_ids) = config.security_group_ids {
+        if let Some(security_group_ids) = config_clone.security_group_ids {
             request = request.set_security_group_ids(Some(security_group_ids));
         }
-        if let Some(security_groups) = config.security_groups {
+        if let Some(security_groups) = config_clone.security_groups {
             request = request.set_security_groups(Some(security_groups));
         }
-        if let Some(subnet_id) = config.subnet_id {
+        if let Some(subnet_id) = config_clone.subnet_id {
             request = request.subnet_id(subnet_id);
         }
-        if let Some(tag_specifications) = config.tag_specifications {
+        if let Some(tag_specifications) = config_clone.tag_specifications {
             request = request.set_tag_specifications(Some(tag_specifications));
         }
-        if let Some(user_data) = config.user_data {
+        if let Some(user_data) = &config_clone.user_data {
             request = request.user_data(user_data);
         }
-
+        info!("Creating EC2 instance with config: {:?}", &config);
         let resp = request.send().await?;
 
         if let Some(instances) = resp.instances {
+            info!("EC2 instance(s) created: {:?}", &instances);
+            println!("EC2 instance(s) created: {:?}", &instances);
             return Ok(instances);
         }
 
+        info!("EC2 instance creation failed: No instances returned");
         Err(EC2Error::InstanceNotCreated)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use aws_config::BehaviorVersion;
-    use serial_test::serial;
-
-    use super::*;
-
-    /// Test helper to setup test environment with AWS credentials
-    fn setup_test_credentials() {
-        unsafe {
-            std::env::set_var("AWS_ACCESS_KEY_ID", "test_access_key");
-            std::env::set_var("AWS_SECRET_ACCESS_KEY", "test_secret_key");
-            std::env::set_var("AWS_REGION", "us-west-2");
-        }
-    }
-
-    /// Test helper to cleanup test environment
-    fn cleanup_test_credentials() {
-        unsafe {
-            std::env::remove_var("AWS_ACCESS_KEY_ID");
-            std::env::remove_var("AWS_SECRET_ACCESS_KEY");
-            std::env::remove_var("AWS_REGION");
-        }
-    }
-
-    #[test]
-    #[serial]
-    fn test_aws_access_key_id_environment_variable() {
-        setup_test_credentials();
-
-        let access_key = std::env::var("AWS_ACCESS_KEY_ID");
-        assert!(access_key.is_ok(), "AWS_ACCESS_KEY_ID should be set");
-        assert_eq!(
-            access_key.unwrap(),
-            "test_access_key",
-            "AWS_ACCESS_KEY_ID should match the expected value"
-        );
-
-        cleanup_test_credentials();
-    }
-
-    #[test]
-    #[serial]
-    fn test_aws_secret_access_key_environment_variable() {
-        setup_test_credentials();
-
-        let secret_key = std::env::var("AWS_SECRET_ACCESS_KEY");
-        assert!(secret_key.is_ok(), "AWS_SECRET_ACCESS_KEY should be set");
-        assert_eq!(
-            secret_key.unwrap(),
-            "test_secret_key",
-            "AWS_SECRET_ACCESS_KEY should match the expected value"
-        );
-
-        cleanup_test_credentials();
-    }
-
-    #[test]
-    #[serial]
-    fn test_aws_region_environment_variable() {
-        setup_test_credentials();
-
-        let region = std::env::var("AWS_REGION");
-        assert!(region.is_ok(), "AWS_REGION should be set");
-        assert_eq!(
-            region.unwrap(),
-            "us-west-2",
-            "AWS_REGION should match the expected value"
-        );
-
-        cleanup_test_credentials();
-    }
-
-    #[test]
-    #[serial]
-    fn test_missing_aws_access_key_id() {
-        cleanup_test_credentials();
-
-        let access_key = std::env::var("AWS_ACCESS_KEY_ID");
-        assert!(
-            access_key.is_err(),
-            "AWS_ACCESS_KEY_ID should not be set in test environment"
-        );
-    }
-
-    #[test]
-    #[serial]
-    fn test_missing_aws_secret_access_key() {
-        cleanup_test_credentials();
-
-        let secret_key = std::env::var("AWS_SECRET_ACCESS_KEY");
-        assert!(
-            secret_key.is_err(),
-            "AWS_SECRET_ACCESS_KEY should not be set in test environment"
-        );
-    }
-
-    #[test]
-    #[serial]
-    fn test_both_credentials_set() {
-        setup_test_credentials();
-
-        let access_key = std::env::var("AWS_ACCESS_KEY_ID");
-        let secret_key = std::env::var("AWS_SECRET_ACCESS_KEY");
-
-        assert!(access_key.is_ok(), "AWS_ACCESS_KEY_ID should be set");
-        assert!(secret_key.is_ok(), "AWS_SECRET_ACCESS_KEY should be set");
-
-        assert_eq!(access_key.unwrap(), "test_access_key");
-        assert_eq!(secret_key.unwrap(), "test_secret_key");
-
-        cleanup_test_credentials();
-    }
-
-    #[test]
-    fn test_ec2_instance_new_with_client() {
-        // Create a mock config for testing
-        let config = aws_types::SdkConfig::builder()
-            .region(aws_types::region::Region::new("us-west-2"))
-            .behavior_version(BehaviorVersion::latest())
-            .build();
-
-        let client = aws_sdk_ec2::Client::new(&config);
-        let instance = EC2Instance::new(client);
-
-        // Verify that the instance was created successfully
-        assert!(
-            std::mem::size_of_val(&instance) > 0,
-            "EC2Instance should be created successfully"
-        );
-    }
-
-    #[test]
-    fn test_ec2_instance_from_config() {
-        let config = aws_types::SdkConfig::builder()
-            .region(aws_types::region::Region::new("us-west-2"))
-            .behavior_version(BehaviorVersion::latest())
-            .build();
-
-        let instance = EC2Instance::from_config(&config);
-
-        // Verify that the instance was created successfully
-        assert!(
-            std::mem::size_of_val(&instance) > 0,
-            "EC2Instance should be created from config successfully"
-        );
-    }
-
-    #[test]
-    #[serial]
-    fn test_credentials_override() {
-        unsafe {
-            // Set initial credentials
-            std::env::set_var("AWS_ACCESS_KEY_ID", "initial_key");
-            std::env::set_var("AWS_SECRET_ACCESS_KEY", "initial_secret");
-        }
-        let initial_access = std::env::var("AWS_ACCESS_KEY_ID").unwrap();
-        assert_eq!(initial_access, "initial_key");
-
-        unsafe {
-            // Override credentials
-            std::env::set_var("AWS_ACCESS_KEY_ID", "new_key");
-            std::env::set_var("AWS_SECRET_ACCESS_KEY", "new_secret");
-        }
-        let new_access = std::env::var("AWS_ACCESS_KEY_ID").unwrap();
-        let new_secret = std::env::var("AWS_SECRET_ACCESS_KEY").unwrap();
-
-        assert_eq!(new_access, "new_key");
-        assert_eq!(new_secret, "new_secret");
-
-        cleanup_test_credentials();
-    }
-
-    #[test]
-    #[serial]
-    fn test_credentials_with_special_characters() {
-        unsafe {
-            std::env::set_var("AWS_ACCESS_KEY_ID", "AKIA-TEST/KEY+123");
-            std::env::set_var("AWS_SECRET_ACCESS_KEY", "SecretKey/With+Special=Chars");
-        }
-        let access_key = std::env::var("AWS_ACCESS_KEY_ID").unwrap();
-        let secret_key = std::env::var("AWS_SECRET_ACCESS_KEY").unwrap();
-
-        assert_eq!(access_key, "AKIA-TEST/KEY+123");
-        assert_eq!(secret_key, "SecretKey/With+Special=Chars");
-
-        cleanup_test_credentials();
-    }
-
-    #[test]
-    fn test_opts_from_yaml_required_fields() {
-        let yaml_str = r#"
-image_id: ami-12345678
-instance_type: t2.micro
-"#;
-        let yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
-        let opts = EC2Instance::opts_from_yaml(&yaml);
-
-        assert!(opts.is_ok(), "Should parse YAML with required fields");
-        let opts = opts.unwrap();
-        assert_eq!(opts.image_id, "ami-12345678");
-        assert_eq!(opts.instance_type, ec2_types::InstanceType::T2Micro);
-    }
-
-    #[test]
-    fn test_opts_from_yaml_missing_required_fields() {
-        let yaml_str = r#"
-instance_type: t2.micro
-"#;
-        let yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
-        let opts = EC2Instance::opts_from_yaml(&yaml);
-
-        assert!(opts.is_err(), "Should fail when image_id is missing");
-    }
-
-    #[test]
-    fn test_opts_from_yaml_with_ami_field() {
-        let yaml_str = r#"
-ami: ami-87654321
-instance_type: t2.small
-"#;
-        let yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
-        let opts = EC2Instance::opts_from_yaml(&yaml);
-
-        assert!(
-            opts.is_ok(),
-            "Should parse YAML with 'ami' field instead of 'image_id'"
-        );
-        let opts = opts.unwrap();
-        assert_eq!(opts.image_id, "ami-87654321");
     }
 }
