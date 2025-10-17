@@ -45,7 +45,7 @@ pub struct EC2Instance {
 
 #[derive(thiserror::Error, Debug, PartialEq, Eq)]
 pub enum EC2Error {
-    #[error("Instance not found")]
+    #[error("EC2 Instance not found")]
     InstanceNotFound,
     #[error("Error while creating EC2 instance")]
     InstanceNotCreated,
@@ -499,9 +499,7 @@ impl EC2Instance {
         Ok(())
     }
 
-    pub async fn list_instances(
-        &self,
-    ) -> Result<Vec<aws_sdk_ec2::types::Instance>, EC2Error> {
+    pub async fn list_instances(&self) -> Result<Vec<aws_sdk_ec2::types::Instance>, EC2Error> {
         let resp = self.client.describe_instances().send().await?;
         let mut instances = Vec::new();
 
