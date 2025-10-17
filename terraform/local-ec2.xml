@@ -8,26 +8,12 @@
             <instancesSet>
                 <item>
                     <architecture>x86_64</architecture>
-                    <blockDeviceMapping>
-                        <item>
-                            <deviceName>/dev/sda1</deviceName>
-                            <ebs>
-                                <attachTime>2025-10-17T20:52:41Z</attachTime>
-                                <deleteOnTermination>true</deleteOnTermination>
-                                <status>in-use</status>
-                                <volumeId>vol-2651d9fa97f59cd7e</volumeId>
-                            </ebs>
-                        </item>
-                    </blockDeviceMapping>
+                    <blockDeviceMapping/>
                     <clientToken>ABCDE0000000000003</clientToken>
                     <ebsOptimized>false</ebsOptimized>
                     <hypervisor>xen</hypervisor>
                     <networkInterfaceSet>
                         <item>
-                            <association>
-                                <ipOwnerId>000000000000</ipOwnerId>
-                                <publicIp>54.214.237.63</publicIp>
-                            </association>
                             <attachment>
                                 <attachTime>2015-01-01T00:00:00Z</attachTime>
                                 <attachmentId>eni-attach-05ad92bdedf9527e0</attachmentId>
@@ -48,10 +34,6 @@
                             <privateIpAddress>10.102.156.233</privateIpAddress>
                             <privateIpAddressesSet>
                                 <item>
-                                    <association>
-                                        <ipOwnerId>000000000000</ipOwnerId>
-                                        <publicIp>54.214.237.63</publicIp>
-                                    </association>
                                     <primary>true</primary>
                                     <privateIpAddress>10.102.156.233</privateIpAddress>
                                 </item>
@@ -67,8 +49,8 @@
                     <groupSet/>
                     <sourceDestCheck>true</sourceDestCheck>
                     <stateReason>
-                        <code/>
-                        <message/>
+                        <code>Client.UserInitiatedShutdown</code>
+                        <message>Client.UserInitiatedShutdown: User initiated shutdown</message>
                     </stateReason>
                     <virtualizationType>paravirtual</virtualizationType>
                     <metadataOptions>
@@ -81,12 +63,12 @@
                     <instanceId>i-3e4ec2bd9f22a6ba5</instanceId>
                     <imageId>ami-87654321</imageId>
                     <instanceState>
-                        <code>16</code>
-                        <name>running</name>
+                        <code>48</code>
+                        <name>terminated</name>
                     </instanceState>
                     <privateDnsName>ip-10-102-156-233.ec2.internal</privateDnsName>
-                    <dnsName>ec2-54-214-237-63.compute-1.amazonaws.com</dnsName>
-                    <reason/>
+                    <dnsName>None</dnsName>
+                    <reason>User initiated (2025-10-17 22:52:35 UTC)</reason>
                     <amiLaunchIndex>0</amiLaunchIndex>
                     <instanceType>t2.small</instanceType>
                     <launchTime>2025-10-17T20:52:41Z</launchTime>
@@ -102,7 +84,6 @@
                     <subnetId>subnet-3c3c5a99f73d043e1</subnetId>
                     <vpcId>vpc-5b7cfab72aa41cff9</vpcId>
                     <privateIpAddress>10.102.156.233</privateIpAddress>
-                    <ipAddress>54.214.237.63</ipAddress>
                 </item>
             </instancesSet>
         </item>
@@ -113,26 +94,12 @@
             <instancesSet>
                 <item>
                     <architecture>x86_64</architecture>
-                    <blockDeviceMapping>
-                        <item>
-                            <deviceName>/dev/sda1</deviceName>
-                            <ebs>
-                                <attachTime>2025-10-17T20:54:42Z</attachTime>
-                                <deleteOnTermination>true</deleteOnTermination>
-                                <status>in-use</status>
-                                <volumeId>vol-b670ba3f7af855983</volumeId>
-                            </ebs>
-                        </item>
-                    </blockDeviceMapping>
+                    <blockDeviceMapping/>
                     <clientToken>ABCDE0000000000003</clientToken>
                     <ebsOptimized>false</ebsOptimized>
                     <hypervisor>xen</hypervisor>
                     <networkInterfaceSet>
                         <item>
-                            <association>
-                                <ipOwnerId>000000000000</ipOwnerId>
-                                <publicIp>54.214.56.162</publicIp>
-                            </association>
                             <attachment>
                                 <attachTime>2015-01-01T00:00:00Z</attachTime>
                                 <attachmentId>eni-attach-5d4e3e00120549d9c</attachmentId>
@@ -153,10 +120,6 @@
                             <privateIpAddress>10.67.205.201</privateIpAddress>
                             <privateIpAddressesSet>
                                 <item>
-                                    <association>
-                                        <ipOwnerId>000000000000</ipOwnerId>
-                                        <publicIp>54.214.56.162</publicIp>
-                                    </association>
                                     <primary>true</primary>
                                     <privateIpAddress>10.67.205.201</privateIpAddress>
                                 </item>
@@ -172,8 +135,8 @@
                     <groupSet/>
                     <sourceDestCheck>true</sourceDestCheck>
                     <stateReason>
-                        <code/>
-                        <message/>
+                        <code>Client.UserInitiatedShutdown</code>
+                        <message>Client.UserInitiatedShutdown: User initiated shutdown</message>
                     </stateReason>
                     <virtualizationType>paravirtual</virtualizationType>
                     <metadataOptions>
@@ -186,12 +149,12 @@
                     <instanceId>i-03353a68cf8fb979f</instanceId>
                     <imageId>ami-87654321</imageId>
                     <instanceState>
-                        <code>16</code>
-                        <name>running</name>
+                        <code>48</code>
+                        <name>terminated</name>
                     </instanceState>
                     <privateDnsName>ip-10-67-205-201.ec2.internal</privateDnsName>
-                    <dnsName>ec2-54-214-56-162.compute-1.amazonaws.com</dnsName>
-                    <reason/>
+                    <dnsName>None</dnsName>
+                    <reason>User initiated (2025-10-17 22:52:35 UTC)</reason>
                     <amiLaunchIndex>0</amiLaunchIndex>
                     <instanceType>t2.small</instanceType>
                     <launchTime>2025-10-17T20:54:42Z</launchTime>
@@ -207,7 +170,6 @@
                     <subnetId>subnet-3c3c5a99f73d043e1</subnetId>
                     <vpcId>vpc-5b7cfab72aa41cff9</vpcId>
                     <privateIpAddress>10.67.205.201</privateIpAddress>
-                    <ipAddress>54.214.56.162</ipAddress>
                 </item>
             </instancesSet>
         </item>
@@ -218,26 +180,12 @@
             <instancesSet>
                 <item>
                     <architecture>x86_64</architecture>
-                    <blockDeviceMapping>
-                        <item>
-                            <deviceName>/dev/sda1</deviceName>
-                            <ebs>
-                                <attachTime>2025-10-17T20:59:19Z</attachTime>
-                                <deleteOnTermination>true</deleteOnTermination>
-                                <status>in-use</status>
-                                <volumeId>vol-1787190b85c87914e</volumeId>
-                            </ebs>
-                        </item>
-                    </blockDeviceMapping>
+                    <blockDeviceMapping/>
                     <clientToken>ABCDE0000000000003</clientToken>
                     <ebsOptimized>false</ebsOptimized>
                     <hypervisor>xen</hypervisor>
                     <networkInterfaceSet>
                         <item>
-                            <association>
-                                <ipOwnerId>000000000000</ipOwnerId>
-                                <publicIp>54.214.124.226</publicIp>
-                            </association>
                             <attachment>
                                 <attachTime>2015-01-01T00:00:00Z</attachTime>
                                 <attachmentId>eni-attach-b684c20c2abde8525</attachmentId>
@@ -258,10 +206,6 @@
                             <privateIpAddress>10.46.83.19</privateIpAddress>
                             <privateIpAddressesSet>
                                 <item>
-                                    <association>
-                                        <ipOwnerId>000000000000</ipOwnerId>
-                                        <publicIp>54.214.124.226</publicIp>
-                                    </association>
                                     <primary>true</primary>
                                     <privateIpAddress>10.46.83.19</privateIpAddress>
                                 </item>
@@ -277,8 +221,8 @@
                     <groupSet/>
                     <sourceDestCheck>true</sourceDestCheck>
                     <stateReason>
-                        <code/>
-                        <message/>
+                        <code>Client.UserInitiatedShutdown</code>
+                        <message>Client.UserInitiatedShutdown: User initiated shutdown</message>
                     </stateReason>
                     <virtualizationType>paravirtual</virtualizationType>
                     <metadataOptions>
@@ -291,12 +235,12 @@
                     <instanceId>i-fb01ad170bfa5524c</instanceId>
                     <imageId>ami-87654321</imageId>
                     <instanceState>
-                        <code>16</code>
-                        <name>running</name>
+                        <code>48</code>
+                        <name>terminated</name>
                     </instanceState>
                     <privateDnsName>ip-10-46-83-19.ec2.internal</privateDnsName>
-                    <dnsName>ec2-54-214-124-226.compute-1.amazonaws.com</dnsName>
-                    <reason/>
+                    <dnsName>None</dnsName>
+                    <reason>User initiated (2025-10-17 22:52:35 UTC)</reason>
                     <amiLaunchIndex>0</amiLaunchIndex>
                     <instanceType>t2.small</instanceType>
                     <launchTime>2025-10-17T20:59:19Z</launchTime>
@@ -312,10 +256,9 @@
                     <subnetId>subnet-3c3c5a99f73d043e1</subnetId>
                     <vpcId>vpc-5b7cfab72aa41cff9</vpcId>
                     <privateIpAddress>10.46.83.19</privateIpAddress>
-                    <ipAddress>54.214.124.226</ipAddress>
                 </item>
             </instancesSet>
         </item>
     </reservationSet>
-    <requestId>08d75545-37df-4445-8ad1-6c203cdb6523</requestId>
+    <requestId>8629abf0-b7d8-496e-bfb7-c8e5540aa841</requestId>
 </DescribeInstancesResponse>%

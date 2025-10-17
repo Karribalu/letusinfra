@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::aws::ec2::ec2_instance::EC2Instance;
+    use crate::aws::ec2::ec2_instance::{EC2Error, EC2Instance};
     use aws_config::BehaviorVersion;
     use aws_sdk_ec2::types as ec2_types;
     use serial_test::serial;
@@ -233,7 +233,7 @@ instance_type: t2.small
     // Test for testing actual ec2 instance creation would go here
     #[tokio::test]
     async fn test_ec2_instance_creation() {
-        // This test would require integration testing with AWS
+        // This test would require integration testing with AWS or localstack
         // and is not suitable for unit tests due to side effects
 
         let yaml_str = r#"
@@ -245,12 +245,87 @@ instance_type: t2.small
             .profile_name("localstack")
             .load()
             .await;
-        println!("Testing with the config: {:#?}", config);
         let opts = EC2Instance::opts_from_yaml(&yaml).unwrap();
-        let result = EC2Instance::from_config(&config).create_instance(&opts).await.unwrap();
+        let created_instances = EC2Instance::from_config(&config)
+            .create_instance(&opts)
+            .await
+            .unwrap();
         assert!(
-            result.len() == 1,
+            created_instances.len() == 1,
             "EC2 instance creation should return instances"
         );
+
+        let list_instances = EC2Instance::from_config(&config)
+            .list_instances()
+            .await
+            .unwrap();
+
+        let created_id = created_instances[0].instance_id.clone();
+        let matching_count = list_instances
+            .iter()
+            .filter(|instance| instance.instance_id == created_id)
+            .count();
+        assert_eq!(
+            matching_count, 1,
+            "Created instance should be listed among running instances"
+        );
+
+        // Cleanup - terminate the created instance
+        for instance in &created_instances {
+            EC2Instance::from_config(&config)
+                .terminate_instance(&instance.clone().instance_id.unwrap())
+                .await
+                .unwrap();
+        }
+
+        // Final verification to check if no instance is running
+        let final_list_instances = EC2Instance::from_config(&config)
+            .list_instances()
+            .await
+            .unwrap();
+        let final_matching_count = final_list_instances
+            .iter()
+            .filter(|instance| {
+                instance.instance_id == created_id
+                    && instance.state.as_ref().unwrap().name
+                        == Some(ec2_types::InstanceStateName::Running)
+            })
+            .count();
+        assert_eq!(
+            final_matching_count, 0,
+            "Created instance should be terminated and not listed among running instances"
+        );
+    }
+
+    // #[tokio::test]
+    // async fn test_ec2_instance_deletion() {
+    //     // This test would require integration testing with AWS or localstack
+    //     // and is not suitable for unit tests due to side effects
+    //
+    //     let config = aws_config::defaults(BehaviorVersion::latest())
+    //         .profile_name("localstack")
+    //         .load()
+    //         .await;
+    //     let ec2_instance = EC2Instance::from_config(&config);
+    //
+    //     ec2_instance
+    //         .terminate_instance("i-5f574f9616fc29f95")
+    //         .await
+    //         .unwrap();
+    // }
+
+    #[tokio::test]
+    async fn test_ec2_instance_deletion_not_found() {
+        // This test would require integration testing with AWS or localstack
+        // and is not suitable for unit tests due to side effects
+
+        let config = aws_config::defaults(BehaviorVersion::latest())
+            .profile_name("localstack")
+            .load()
+            .await;
+        let ec2_instance = EC2Instance::from_config(&config);
+
+        let error = ec2_instance.terminate_instance("i-f45b1068dd622f3c").await;
+        assert_eq!(error.err(), Some(EC2Error::InstanceNotFound));
     }
 }

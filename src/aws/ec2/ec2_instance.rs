@@ -43,23 +43,30 @@ pub struct EC2Instance {
     client: aws_sdk_ec2::Client,
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error, Debug, PartialEq, Eq)]
 pub enum EC2Error {
-    #[error("EC2 instance not found")]
+    #[error("Instance not found")]
     InstanceNotFound,
     #[error("Error while creating EC2 instance")]
     InstanceNotCreated,
     #[error("Options error: {0}")]
     OptionsError(String),
+    #[error("AWS SDK error: {0}")]
+    SdkError(String),
 }
 
-impl<T: ProvideErrorMetadata> From<T> for EC2Error {
+impl<T: ProvideErrorMetadata + std::fmt::Display> From<T> for EC2Error {
     fn from(value: T) -> Self {
-        match value.code().as_deref() {
-            Some("InvalidInstanceID.NotFound") => EC2Error::InstanceNotFound,
+        match value.code() {
+            Some(code) if code == "InvalidInstanceID.NotFound" => EC2Error::InstanceNotFound,
             _ => {
-                print!("Error metadata: {:?} {:?}", value.meta(), value.message());
-                EC2Error::InstanceNotCreated
+                let error_message = format!(
+                    "AWS SDK error: {} (code: {:?}, message: {:?})",
+                    value,
+                    value.code(),
+                    value.message()
+                );
+                EC2Error::SdkError(error_message)
             }
         }
     }
@@ -494,7 +501,7 @@ impl EC2Instance {
 
     pub async fn list_instances(
         &self,
-    ) -> Result<Vec<aws_sdk_ec2::types::Instance>, aws_sdk_ec2::Error> {
+    ) -> Result<Vec<aws_sdk_ec2::types::Instance>, EC2Error> {
         let resp = self.client.describe_instances().send().await?;
         let mut instances = Vec::new();
 
@@ -526,7 +533,8 @@ impl EC2Instance {
         if let Some(block_device_mappings) = config_clone.block_device_mappings {
             request = request.set_block_device_mappings(Some(block_device_mappings));
         }
-        if let Some(capacity_reservation_specification) = config_clone.capacity_reservation_specification
+        if let Some(capacity_reservation_specification) =
+            config_clone.capacity_reservation_specification
         {
             request =
                 request.capacity_reservation_specification(capacity_reservation_specification);
