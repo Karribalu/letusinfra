@@ -3,10 +3,28 @@ kind: Infra
 cloud: AWS
 region: us-west-2
 metadata:
-  name: ec2-sample
+  name: ec2-sample-model
+modulpack:
+  verion: v0.1.0
 components:
-  - type: EC2Instance
+  - type: EC2Instance # ecs-instance
     name: ec2-sample-instance
     properties:
       instance_type: t2.micro
       ami: ami-04c174f38aefd7dc8
+    connectsTo:
+      - type: SecurityGroup
+        name: ec2-sample-sg
+      - type: S3Bucket
+        name: sample-bucket
+        model: sample
+
+  - type: SecurityGroup
+    name: ec2-sample-sg
+    properties:
+      description: Sample security group
+      ingress:
+        - ip_protocol: https
+          from_port: 22
+          to_port: 22
+          cidr_ipv4: 0.0.0.0/0

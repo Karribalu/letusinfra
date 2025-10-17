@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InfraConfig {
@@ -16,7 +16,7 @@ pub struct Metadata {
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Component {
     #[serde(rename = "type")]
     pub component_type: String,
@@ -29,7 +29,14 @@ pub struct Component {
     pub connects_to: Option<Vec<Dependency>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+impl Hash for Component {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.component_type.hash(state);
+        self.name.hash(state);
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct Dependency {
     #[serde(rename = "type")]
     pub dep_type: String,
@@ -98,6 +105,8 @@ mod tests {
         let yaml_content = r#"
 version: v1
 kind: Infra
+cloud: AWS
+region: us-west-2
 metadata:
   name: sample
 components:

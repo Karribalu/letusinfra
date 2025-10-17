@@ -37,26 +37,12 @@ pub fn execute(config: &Config) {
 
     // Try to parse using the structured model
     match InfraConfig::from_yaml(&content) {
-        Ok(config) => {
+        Ok(_config) => {
             println!("Successfully parsed YAML using InfraConfig model");
-            plan_components(&config.region, &config.components);
+            // plan_components(&config.region, &config.components);
         }
         Err(err) => {
             eprintln!("Failed to parse YAML into InfraConfig: {}", err);
-        }
-    }
-}
-
-fn plan_components(region: &str, components: &[crate::models::Component]) {
-    for component in components {
-        match component.component_type.as_str() {
-            "EC2Instance" => {
-                // Create EC2 instance Terraform code
-                plan_ec2_instance(region, component);
-            }
-            _ => {
-                eprintln!("Unsupported component type: {}", component.component_type);
-            }
         }
     }
 }

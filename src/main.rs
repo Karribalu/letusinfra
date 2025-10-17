@@ -1,4 +1,5 @@
 use clap::Parser;
+mod aws;
 mod commands;
 mod models;
 mod utils;
