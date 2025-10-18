@@ -328,4 +328,38 @@ instance_type: t2.small
         let error = ec2_instance.terminate_instance("i-f45b1068dd622f3c").await;
         assert_eq!(error.err(), Some(EC2Error::InstanceNotFound));
     }
+
+    #[tokio::test]
+    async fn test_ec2_instance_stop_not_found() {
+        // This test would require integration testing with AWS or localstack
+        // and is not suitable for unit tests due to side effects
+
+        let config = aws_config::defaults(BehaviorVersion::latest())
+            .profile_name("localstack")
+            .load()
+            .await;
+        let ec2_instance = EC2Instance::from_config(&config);
+
+        let error = ec2_instance.stop_instance("i-3e4ec2bd9f22a6ba5").await;
+        println!("Error: {:?}", error);
+        assert_eq!(error.err(), Some(EC2Error::InstanceNotFound));
+    }
+
+    #[tokio::test]
+    async fn test_ec2_describe_instances_empty() {
+        // This test would require integration testing with AWS or localstack
+        // and is not suitable for unit tests due to side effects
+
+        let config = aws_config::defaults(BehaviorVersion::latest())
+            .profile_name("localstack")
+            .load()
+            .await;
+        let ec2_instance = EC2Instance::from_config(&config);
+
+        let instances = ec2_instance
+            .describe_instance("i-3e4ec2bd9f22a6ba5")
+            .await
+            .unwrap();
+        println!("Instances: {:?}", instances);
+    }
 }

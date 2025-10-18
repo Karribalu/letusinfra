@@ -66,6 +66,12 @@ impl<T: ProvideErrorMetadata + std::fmt::Display> From<T> for EC2Error {
                     value.code(),
                     value.message()
                 );
+                println!(
+                    "Converted AWS SDK error to EC2Error: {} (code: {:?}, message: {:?})",
+                    value,
+                    value.code(),
+                    value.message()
+                );
                 EC2Error::SdkError(error_message)
             }
         }
