@@ -340,8 +340,7 @@ instance_type: t2.small
             .await;
         let ec2_instance = EC2Instance::from_config(&config);
 
-        let error = ec2_instance.stop_instance("i-3e4ec2bd9f22a6ba5").await;
-        println!("Error: {:?}", error);
+        let error = ec2_instance.stop_instance("i-3e4ec2bd9f22a6ba").await;
         assert_eq!(error.err(), Some(EC2Error::InstanceNotFound));
     }
 
