@@ -3,3 +3,5 @@ target/
 workspaces/
 
 .idea/
+
+terraform/

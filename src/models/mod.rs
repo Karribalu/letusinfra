@@ -96,6 +96,19 @@ impl Component {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum PlanError {
+    #[error("Invalid component: {0}")]
+    InvalidComponent(String),
+    #[error("Missing mandatory property '{0}' in component '{1}'")]
+    MissingProperty(String, String),
+    #[error("Invalid property type for '{0}' in component '{1}' : expected {2}, found {3}")]
+    InvalidPropertyType(String, String, String, String),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Plan {}
+
 #[cfg(test)]
 mod tests {
     use super::*;

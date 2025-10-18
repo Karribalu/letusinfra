@@ -237,7 +237,7 @@ instance_type: t2.small
         // and is not suitable for unit tests due to side effects
 
         let yaml_str = r#"
-ami: ami-87654321
+ami: "ami-04c174f38aefd7dc8"
 instance_type: t2.small
 "#;
         let yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
@@ -250,6 +250,7 @@ instance_type: t2.small
             .create_instance(&opts)
             .await
             .unwrap();
+        println!("Created Instances: {:?}", created_instances);
         assert!(
             created_instances.len() == 1,
             "EC2 instance creation should return instances"
@@ -259,6 +260,8 @@ instance_type: t2.small
             .list_instances()
             .await
             .unwrap();
+
+        println!("List Instances: {:?}", list_instances);
 
         let created_id = created_instances[0].instance_id.clone();
         let matching_count = list_instances
@@ -340,7 +343,7 @@ instance_type: t2.small
             .await;
         let ec2_instance = EC2Instance::from_config(&config);
 
-        let error = ec2_instance.stop_instance("i-3e4ec2bd9f22a6ba").await;
+        let error = ec2_instance.stop_instance("i-8e285d79f825b543").await;
         assert_eq!(error.err(), Some(EC2Error::InstanceNotFound));
     }
 
@@ -356,7 +359,7 @@ instance_type: t2.small
         let ec2_instance = EC2Instance::from_config(&config);
 
         let instances = ec2_instance
-            .describe_instance("i-3e4ec2bd9f22a6ba5")
+            .describe_instance("i-e03f9007759cec241")
             .await
             .unwrap();
         println!("Instances: {:?}", instances);

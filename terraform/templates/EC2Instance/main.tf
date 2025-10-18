@@ -10,3 +10,8 @@ resource "aws_instance" "app_server" {
     Environment = "let-us-infra"
   }
 }
+
+
+output "ec2_output" {
+  value = aws_instance.app_server
+}

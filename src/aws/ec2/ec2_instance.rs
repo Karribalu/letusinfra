@@ -524,6 +524,8 @@ impl EC2Instance {
         &self,
         config: &InstanceOpts,
     ) -> Result<Vec<aws_sdk_ec2::types::Instance>, EC2Error> {
+        tracing::info!("Creating EC2 instance with config: {:?}", config);
+        println!("Creating EC2 instance with config: {:?}", config);
         let config_clone = config.clone();
         let mut request = self
             .client

@@ -1,5 +1,7 @@
 use crate::{
-    commands::validate::validate_file, models::InfraConfig, utils::constants::TEMPLATES_DIR,
+    commands::validate::validate_file,
+    models::InfraConfig,
+    utils::{constants::TEMPLATES_DIR, plan_components},
 };
 
 #[derive(clap::Args, Debug)]
@@ -37,68 +39,12 @@ pub fn execute(config: &Config) {
 
     // Try to parse using the structured model
     match InfraConfig::from_yaml(&content) {
-        Ok(_config) => {
+        Ok(config) => {
             println!("Successfully parsed YAML using InfraConfig model");
-            // plan_components(&config.region, &config.components);
+            plan_components(&config);
         }
         Err(err) => {
             eprintln!("Failed to parse YAML into InfraConfig: {}", err);
         }
-    }
-}
-
-fn plan_ec2_instance(region: &str, component: &crate::models::Component) {
-    let name = &component.name;
-    let instance_type = component
-        .get_property_as_string("instanceType")
-        .unwrap_or_else(|| "t2.micro".to_string());
-    let ami_id = component
-        .get_property_as_string("ami")
-        .unwrap_or_else(|| "ami-0c55b159cbfafe1f0".to_string()); // Default to Ubuntu 20.04 LTS AMI
-
-    let temp_dir = std::env::temp_dir();
-    // let temp_dir = std::env::current_dir().expect("Unable to get current directory");
-
-    // Copy the template files to a new directory for this component from TEMPLATES_DIR
-    let component_dir = temp_dir.join(format!("{}_{}", name, "EC2Instance"));
-    std::fs::create_dir_all(&component_dir).expect("Unable to create component directory");
-
-    let templates_dir = std::path::Path::new(TEMPLATES_DIR).join("EC2Instance");
-    println!("Copying templates from {:?}", templates_dir);
-    for entry in std::fs::read_dir(templates_dir).expect("Unable to read templates directory") {
-        let entry = entry.expect("Unable to read entry");
-        let src = entry.path();
-        let dst = component_dir.join(src.file_name().expect("Unable to get file name"));
-        std::fs::copy(&src, &dst).expect("Unable to copy template file");
-    }
-
-    let tfvars_content = format!(
-        "aws_region = \"{}\"\ninstance_type = \"{}\"\nami_id = \"{}\"",
-        region, instance_type, ami_id
-    );
-    std::fs::write(component_dir.join("vars.tfvars"), tfvars_content)
-        .expect("Unable to write tfvars file");
-
-    // Run terraform init and apply in the component directory
-    let mut init_status = std::process::Command::new("terraform");
-    let init_status = init_status
-        .current_dir(&component_dir)
-        .arg("init")
-        .status()
-        .expect("Failed to execute terraform init");
-    if !init_status.success() {
-        eprintln!("terraform init failed");
-        return;
-    }
-    let mut plan_status = std::process::Command::new("terraform");
-    let plan_status = plan_status
-        .arg("plan")
-        .current_dir(&component_dir)
-        .arg("-var-file=vars.tfvars")
-        .status()
-        .expect("Failed to execute terraform plan");
-    if !plan_status.success() {
-        eprintln!("terraform plan failed");
-        return;
     }
 }
