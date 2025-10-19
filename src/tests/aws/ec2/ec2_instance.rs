@@ -246,14 +246,15 @@ instance_type: t2.small
             .load()
             .await;
         let opts = EC2Instance::opts_from_yaml(&yaml).unwrap();
-        let created_instances = EC2Instance::from_config(&config)
+        let created_instance = EC2Instance::from_config(&config)
             .create_instance(&opts)
             .await
             .unwrap();
-        println!("Created Instances: {:?}", created_instances);
+        println!("Created Instances: {:?}", created_instance);
+        // created_instances is now a single instance, not an array
         assert!(
-            created_instances.len() == 1,
-            "EC2 instance creation should return instances"
+            created_instance.instance_id.is_some(),
+            "EC2 instance creation should return an instance with an ID"
         );
 
         let list_instances = EC2Instance::from_config(&config)
@@ -263,7 +264,7 @@ instance_type: t2.small
 
         println!("List Instances: {:?}", list_instances);
 
-        let created_id = created_instances[0].instance_id.clone();
+        let created_id = created_instance.instance_id.clone();
         let matching_count = list_instances
             .iter()
             .filter(|instance| instance.instance_id == created_id)
@@ -274,12 +275,10 @@ instance_type: t2.small
         );
 
         // Cleanup - terminate the created instance
-        for instance in &created_instances {
-            EC2Instance::from_config(&config)
-                .terminate_instance(&instance.clone().instance_id.unwrap())
-                .await
-                .unwrap();
-        }
+        EC2Instance::from_config(&config)
+            .terminate_instance(&created_instance.instance_id.clone().unwrap())
+            .await
+            .unwrap();
 
         // Final verification to check if no instance is running
         let final_list_instances = EC2Instance::from_config(&config)

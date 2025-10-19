@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use std::any::Any;
-    use std::future::Future;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
@@ -21,37 +20,27 @@ mod tests {
         AWSClient::EC2Client(aws_sdk_ec2::Client::new(&sdk_config))
     }
 
-    fn boxed_refresh_fn<F, Fut>(f: F) -> RefreshFunction<String>
-    where
-        F: Fn(AWSClient, String) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = Result<Option<(Box<dyn Any>, Vec<String>)>, String>> + Send + 'static,
-    {
-        Box::new(move |client, resource_id| Box::pin(f(client, resource_id)))
-    }
-
     #[tokio::test]
     async fn wait_until_state_returns_resource_once_target_state_reached() {
         let client = test_client();
         let call_counter = Arc::new(AtomicUsize::new(0));
 
         // Mocking the behavior of the refresh function
-        let refresh_fn = boxed_refresh_fn({
-            let call_counter = Arc::clone(&call_counter);
-            move |_client, _resource_id| {
-                let call_counter = Arc::clone(&call_counter);
-                async move {
-                    let call = call_counter.fetch_add(1, Ordering::SeqCst);
-                    let state = if call < 2 {
-                        vec![String::from("pending")]
-                    } else {
-                        vec![String::from("running")]
-                    };
-                    Ok(Some((
-                        Box::new(String::from("resource")) as Box<dyn Any>,
-                        state,
-                    )))
-                }
-            }
+        let call_counter_clone = Arc::clone(&call_counter);
+        let refresh_fn: RefreshFunction = Box::new(move |_client, _resource_id| {
+            let call_counter = Arc::clone(&call_counter_clone);
+            Box::pin(async move {
+                let call = call_counter.fetch_add(1, Ordering::SeqCst);
+                let state = if call < 2 {
+                    vec![String::from("pending")]
+                } else {
+                    vec![String::from("running")]
+                };
+                Ok(Some((
+                    Box::new(String::from("resource")) as Box<dyn Any>,
+                    state,
+                )))
+            })
         });
 
         let config = StateChangeConfig::new(
@@ -71,8 +60,10 @@ mod tests {
             .expect("should reach target state");
 
         let resource = resource
+            .unwrap()
             .downcast::<String>()
             .expect("resource should downcast to String");
+
         assert_eq!(resource.as_str(), "resource");
         assert!(call_counter.load(Ordering::SeqCst) >= 3);
     }
@@ -81,7 +72,7 @@ mod tests {
     async fn wait_until_state_returns_not_found_after_threshold() {
         let client = test_client();
 
-        let refresh_fn = boxed_refresh_fn(|_, _| async { Ok(None) });
+        let refresh_fn: RefreshFunction = Box::new(|_, _| Box::pin(async { Ok(None) }));
 
         let config = StateChangeConfig::new(
             vec![String::from("running")],
@@ -109,11 +100,13 @@ mod tests {
     async fn wait_until_state_returns_unexpected_state_for_invalid_transition() {
         let client = test_client();
 
-        let refresh_fn = boxed_refresh_fn(|_, _| async {
-            Ok(Some((
-                Box::new(String::from("resource")) as Box<dyn Any>,
-                vec![String::from("failed")],
-            )))
+        let refresh_fn: RefreshFunction = Box::new(|_, _| {
+            Box::pin(async {
+                Ok(Some((
+                    Box::new(String::from("resource")) as Box<dyn Any>,
+                    vec![String::from("failed")],
+                )))
+            })
         });
 
         let config = StateChangeConfig::new(
@@ -151,7 +144,7 @@ mod tests {
     async fn wait_until_state_returns_timeout_when_too_short() {
         let client = test_client();
 
-        let refresh_fn = boxed_refresh_fn(|_, _| async { Ok(None) });
+        let refresh_fn: RefreshFunction = Box::new(|_, _| Box::pin(async { Ok(None) }));
 
         let config = StateChangeConfig::new(
             vec![String::from("running")],
@@ -179,7 +172,7 @@ mod tests {
     async fn wait_until_state_succeeds_when_target_absent() {
         let client = test_client();
 
-        let refresh_fn = boxed_refresh_fn(|_, _| async { Ok(None) });
+        let refresh_fn: RefreshFunction = Box::new(|_, _| Box::pin(async { Ok(None) }));
 
         let config = StateChangeConfig::new(
             Vec::<String>::new(),
@@ -197,17 +190,15 @@ mod tests {
             .await
             .expect("should treat absence as success");
 
-        let unit = resource
-            .downcast::<()>()
-            .expect("resource should downcast to unit");
-        assert_eq!(*unit, ());
+        assert!(resource.is_none());
     }
 
     #[tokio::test]
     async fn wait_until_state_maps_refresh_errors() {
         let client = test_client();
 
-        let refresh_fn = boxed_refresh_fn(|_, _| async { Err("boom".to_string()) });
+        let refresh_fn: RefreshFunction =
+            Box::new(|_, _| Box::pin(async { Err("boom".to_string()) }));
 
         let config = StateChangeConfig::new(
             vec![String::from("running")],

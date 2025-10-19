@@ -1,9 +1,9 @@
-use std::{any::Any, fmt::Display, future::Future, pin::Pin, time::Duration};
+use std::{any::Any, future::Future, pin::Pin, time::Duration};
 
 use tokio::time::{Instant, sleep, timeout};
 
 use crate::aws::AWSClient;
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum WaitError {
     #[error(
         "Timeout error after {timeout:?}. Last known state: {last_state}. Expected states: {expected_states:?}"
@@ -23,13 +23,9 @@ pub enum WaitError {
     #[error("Error refreshing resource state: {0}")]
     RefreshError(String),
 }
-
-pub type RefreshFunction<T> = Box<
-    dyn Fn(
-        AWSClient,
-        String,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<(Box<dyn Any>, Vec<T>)>, String>>>>,
->;
+pub type RefreshFunctionReturn =
+    Pin<Box<dyn Future<Output = Result<Option<(Box<dyn Any>, Vec<String>)>, String>>>>;
+pub type RefreshFunction = Box<dyn Fn(AWSClient, String) -> RefreshFunctionReturn>;
 /**
  * Configuration for waiting on a resource to reach a desired state.
  * target_state: The desired state to wait for.
@@ -37,10 +33,10 @@ pub type RefreshFunction<T> = Box<
  * refresh_fn: A function that refreshes the resource state. It takes an AWS EC2 client and a resource identifier,
  * and returns a Future that resolves to the current state of the resource.
  */
-pub struct StateChangeConfig<T: ToString> {
-    pub target_state: Vec<T>,
-    pub pending_state: Vec<T>,
-    pub refresh_fn: RefreshFunction<T>,
+pub struct StateChangeConfig {
+    pub target_state: Vec<String>,
+    pub pending_state: Vec<String>,
+    pub refresh_fn: RefreshFunction,
     pub initial_delay: Duration, // Initial delay before starting the refresh attempts
     pub timeout: Duration,       // Maximum time to wait for the desired state
     pub min_delay: Duration,     // Minimum delay between refresh attempts
@@ -48,11 +44,11 @@ pub struct StateChangeConfig<T: ToString> {
     pub not_found_checks: u32, // Number of consecutive not found checks before giving up
 }
 
-impl<T: PartialEq + ToString + Display> StateChangeConfig<T> {
+impl StateChangeConfig {
     pub fn new(
-        target_state: Vec<T>,
-        pending_state: Vec<T>,
-        refresh_fn: RefreshFunction<T>,
+        target_state: Vec<String>,
+        pending_state: Vec<String>,
+        refresh_fn: RefreshFunction,
         start_delay: Option<Duration>,
         timeout: Option<Duration>,
         min_delay: Option<Duration>,
@@ -76,12 +72,12 @@ impl<T: PartialEq + ToString + Display> StateChangeConfig<T> {
         &self,
         client: AWSClient,
         resource_id: String,
-    ) -> Result<Box<dyn Any>, WaitError> {
+    ) -> Result<Option<Box<dyn Any>>, WaitError> {
         let start_time = Instant::now(); // Track the start time for timeout calculation
         let mut not_found_count = 0u32;
         let mut current_delay = self.min_delay;
         let mut last_state = String::new();
-        let mut last_resource: Option<Box<dyn Any>> = None;
+        let mut last_resource: Option<Box<dyn Any>>;
         let mut i: u32 = 0;
 
         // Initial delay
@@ -90,6 +86,14 @@ impl<T: PartialEq + ToString + Display> StateChangeConfig<T> {
         }
 
         loop {
+            tracing::info!(
+                "Waiting for EC2 instance creation, elapsed: {:?}",
+                start_time.elapsed()
+            );
+            println!(
+                "Waiting for EC2 instance creation, elapsed: {:?}",
+                start_time.elapsed()
+            );
             i += 1;
             // Check for timeout
             if start_time.elapsed() >= self.timeout {
@@ -125,7 +129,7 @@ impl<T: PartialEq + ToString + Display> StateChangeConfig<T> {
             if resource.is_none() {
                 // If we're waiting for the absence of a thing, return success
                 if self.target_state.is_empty() {
-                    return Ok(Box::new(()));
+                    return Ok(None);
                 }
 
                 // Resource not found, increment counter
@@ -142,7 +146,7 @@ impl<T: PartialEq + ToString + Display> StateChangeConfig<T> {
 
                 // Check if current state is a target state
                 if self.target_state == current_state {
-                    return Ok(last_resource.unwrap());
+                    return Ok(last_resource);
                 }
 
                 // Check if current state is a pending state

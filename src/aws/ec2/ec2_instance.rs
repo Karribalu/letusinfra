@@ -1,5 +1,12 @@
+use std::any::Any;
+
 use aws_sdk_ec2::{error::ProvideErrorMetadata, types as ec2_types};
 use tracing::info;
+
+use crate::aws::{
+    AWSClient,
+    internal::wait_and_refresh::{RefreshFunctionReturn, StateChangeConfig, WaitError},
+};
 
 #[derive(Debug, Clone)]
 pub struct InstanceOpts {
@@ -53,6 +60,8 @@ pub enum EC2Error {
     OptionsError(String),
     #[error("AWS SDK error: {0}")]
     SdkError(String),
+    #[error("Error while waiting for state to confirm the resource change: {0}")]
+    StateError(#[from] WaitError),
 }
 
 impl<T: ProvideErrorMetadata + std::fmt::Display> From<T> for EC2Error {
@@ -523,7 +532,7 @@ impl EC2Instance {
     pub async fn create_instance(
         &self,
         config: &InstanceOpts,
-    ) -> Result<Vec<aws_sdk_ec2::types::Instance>, EC2Error> {
+    ) -> Result<aws_sdk_ec2::types::Instance, EC2Error> {
         tracing::info!("Creating EC2 instance with config: {:?}", config);
         println!("Creating EC2 instance with config: {:?}", config);
         let config_clone = config.clone();
@@ -633,13 +642,68 @@ impl EC2Instance {
         info!("Creating EC2 instance with config: {:?}", &config);
         let resp = request.send().await?;
 
+        let wait_state_config = StateChangeConfig::new(
+            vec![ec2_types::InstanceStateName::Running.to_string()],
+            vec![ec2_types::InstanceStateName::Pending.to_string()],
+            Box::new(EC2Instance::wait_for_completion),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
         if let Some(instances) = resp.instances {
-            info!("EC2 instance(s) created: {:?}", &instances);
-            println!("EC2 instance(s) created: {:?}", &instances);
-            return Ok(instances);
+            let result = wait_state_config
+                .wait_until_state(
+                    AWSClient::EC2Client(self.client.clone()),
+                    instances[0].instance_id.as_ref().unwrap().clone(),
+                )
+                .await?;
+            if let Some(created_instances) = result {
+                info!("EC2 instance created successfully: {:?}", created_instances);
+                return Ok(*created_instances
+                    .downcast::<aws_sdk_ec2::types::Instance>()
+                    .unwrap());
+            }
         }
 
         info!("EC2 instance creation failed: No instances returned");
         Err(EC2Error::InstanceNotCreated)
+    }
+
+    fn wait_for_completion(client: AWSClient, resource_id: String) -> RefreshFunctionReturn {
+        Box::pin(async move {
+            let ec2_client = match client {
+                AWSClient::EC2Client(c) => c,
+                _ => return Err("Invalid client type for EC2 instance".to_string()),
+            };
+
+            let resp = ec2_client
+                .describe_instances()
+                .instance_ids(resource_id.clone())
+                .send()
+                .await
+                .map_err(|e| format!("Failed to describe instance: {}", e))?;
+
+            if let Some(reservations) = resp.reservations {
+                for reservation in reservations {
+                    if let Some(instances) = reservation.instances {
+                        if let Some(instance) = instances.into_iter().next() {
+                            // Extract state before moving instance
+                            let state = instance
+                                .state
+                                .as_ref()
+                                .and_then(|s| s.name.as_ref())
+                                .map(|n| n.as_str().to_string())
+                                .unwrap_or_else(|| "unknown".to_string());
+
+                            return Ok(Some((Box::new(instance) as Box<dyn Any>, vec![state])));
+                        }
+                    }
+                }
+            }
+
+            Err("Instance not found".to_string())
+        })
     }
 }
