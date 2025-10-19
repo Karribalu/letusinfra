@@ -35,7 +35,7 @@ async fn main() -> Result<(), Error> {
         }
         Config::Apply(apply_config) => {
             info!("Apply command called with config: {:?}", apply_config);
-            commands::apply::execute(&apply_config);
+            commands::apply::execute(&apply_config).await;
         }
         Config::Destroy(destroy_config) => {
             info!("Destroy command called with config: {:?}", destroy_config);

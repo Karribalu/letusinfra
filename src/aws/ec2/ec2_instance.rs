@@ -97,7 +97,7 @@ impl EC2Instance {
         EC2Instance { client }
     }
 
-    pub(crate) fn opts_from_yaml(yaml: &serde_yaml::Value) -> Result<InstanceOpts, EC2Error> {
+    pub fn opts_from_yaml(yaml: &serde_yaml::Value) -> Result<InstanceOpts, EC2Error> {
         // Helper function to get string from yaml
         let get_string = |yaml: &serde_yaml::Value, key: &str| -> Option<String> {
             yaml.get(key)?.as_str().map(|s| s.to_string())
@@ -529,6 +529,10 @@ impl EC2Instance {
         Ok(instances)
     }
 
+    /**
+     * Creates an EC2 instance with the given configuration options.
+     * This will wait until the instance is in the 'running' state before returning.
+     */
     pub async fn create_instance(
         &self,
         config: &InstanceOpts,

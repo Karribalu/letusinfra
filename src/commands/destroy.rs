@@ -21,11 +21,11 @@ pub fn execute(config: &Config) {
     let file_path = &config.options.file_path;
     println!("File path is: {}", file_path);
     let is_valid = validate_file(file_path);
-    if is_valid {
-        println!("YAML file is valid.");
-    } else {
-        println!("YAML file is invalid.");
-    }
+    // if is_valid {
+    //     println!("YAML file is valid.");
+    // } else {
+    //     println!("YAML file is invalid.");
+    // }
 
     let content = match std::fs::read_to_string(file_path) {
         Ok(content) => content,

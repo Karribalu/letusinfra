@@ -19,12 +19,12 @@ components:
         name: sample-bucket
         model: sample
 
-  - type: SecurityGroup
-    name: ec2-sample-sg
-    properties:
-      description: Sample security group
-      ingress:
-        - ip_protocol: https
-          from_port: 22
-          to_port: 22
-          cidr_ipv4: 0.0.0.0/0
+  # - type: SecurityGroup
+  #   name: ec2-sample-sg
+  #   properties:
+  #     description: Sample security group
+  #     ingress:
+  #       - ip_protocol: https
+  #         from_port: 22
+  #         to_port: 22
+  #         cidr_ipv4: 0.0.0.0/0

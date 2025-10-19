@@ -1,11 +1,55 @@
+use core::fmt;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::{collections::HashMap, hash::Hash};
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum Kind {
+    #[serde(rename = "Infra")]
+    Infra,
+    #[serde(rename = "Component")]
+    Component,
+}
+impl Kind {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Kind::Infra => "Infra",
+            Kind::Component => "Component",
+        }
+    }
+}
+impl Display for Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub enum CloudProvider {
+    AWS,
+    // GCP,
+    // Azure,
+}
+
+impl CloudProvider {
+    pub fn as_str(&self) -> &str {
+        match self {
+            CloudProvider::AWS => "AWS",
+            // CloudProvider::GCP => "GCP",
+        }
+    }
+}
+
+impl Display for CloudProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InfraConfig {
     pub version: String,
-    pub kind: String,
-    pub cloud: String,
+    pub kind: Kind,
+    pub cloud: CloudProvider,
     pub region: String,
     pub metadata: Metadata,
     pub components: Vec<Component>,
@@ -22,7 +66,7 @@ pub struct Component {
     pub component_type: String,
     pub name: String,
     #[serde(default)]
-    pub properties: HashMap<String, serde_yaml::Value>,
+    pub properties: serde_yaml::Value,
     #[serde(rename = "dependsOn", skip_serializing_if = "Option::is_none")]
     pub depends_on: Option<Vec<Dependency>>,
     #[serde(rename = "connectsTo", skip_serializing_if = "Option::is_none")]
@@ -96,6 +140,15 @@ impl Component {
     }
 }
 
+impl fmt::Display for InfraConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match serde_json::to_string_pretty(self) {
+            Ok(json) => write!(f, "{}", json),
+            Err(_) => write!(f, "<Invalid JSON>"),
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum PlanError {
     #[error("Invalid component: {0}")]
@@ -139,7 +192,7 @@ components:
 
         let config = InfraConfig::from_yaml(yaml_content).unwrap();
         assert_eq!(config.version, "v1");
-        assert_eq!(config.kind, "Infra");
+        assert_eq!(config.kind, Kind::Infra);
         assert_eq!(config.metadata.name, "sample");
         assert_eq!(config.components.len(), 2);
         assert_eq!(config.components[0].component_type, "VPC");

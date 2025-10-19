@@ -2,7 +2,7 @@
 mod tests {
     use crate::aws::ec2::ec2_instance::{EC2Error, EC2Instance};
     use aws_config::BehaviorVersion;
-    use aws_sdk_ec2::types as ec2_types;
+    use aws_sdk_ec2::{config::ProvideCredentials, types as ec2_types};
     use serial_test::serial;
 
     /// Test helper to setup test environment with AWS credentials
@@ -217,7 +217,7 @@ instance_type: t2.micro
     fn test_opts_from_yaml_with_ami_field() {
         let yaml_str = r#"
 ami: ami-87654321
-instance_type: t2.small
+instance_type: t2.micro
 "#;
         let yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
         let opts = EC2Instance::opts_from_yaml(&yaml);
@@ -237,21 +237,21 @@ instance_type: t2.small
         // and is not suitable for unit tests due to side effects
 
         let yaml_str = r#"
-ami: "ami-04c174f38aefd7dc8"
-instance_type: t2.small
+ami: ami-04c174f38aefd7dc8
+instance_type: t2.micro
 "#;
         let yaml: serde_yaml::Value = serde_yaml::from_str(yaml_str).unwrap();
         let config = aws_config::defaults(BehaviorVersion::latest())
-            .profile_name("localstack")
+            .profile_name("default")
             .load()
             .await;
+        println!("AWS Config Loaded: {:?}", config.endpoint_url());
         let opts = EC2Instance::opts_from_yaml(&yaml).unwrap();
         let created_instance = EC2Instance::from_config(&config)
             .create_instance(&opts)
             .await
             .unwrap();
-        println!("Created Instances: {:?}", created_instance);
-        // created_instances is now a single instance, not an array
+        println!("Created Instance: {:?}", created_instance);
         assert!(
             created_instance.instance_id.is_some(),
             "EC2 instance creation should return an instance with an ID"

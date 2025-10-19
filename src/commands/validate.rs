@@ -1,5 +1,4 @@
 use crate::models::InfraConfig;
-use crate::utils::constants;
 
 #[derive(clap::Args, Debug)]
 #[command(version, about, long_about = None)]
@@ -14,24 +13,30 @@ pub struct Options {
     pub file_path: String,
 }
 
-pub fn execute(config: &Config) {
+#[derive(Debug, thiserror::Error)]
+pub enum ValidationError {
+    #[error("Failed to read file: {0}")]
+    FileReadError(String),
+    #[error("Failed to parse YAML: {0}")]
+    YamlParseError(String),
+    #[error("InfraConfig validation error: {0}")]
+    InfraConfigValidationError(String),
+}
+
+pub fn execute(config: &Config) -> Result<(), ValidationError> {
     println!("Executing validate command with config: {:?}", config);
 
     let file_path = &config.options.file_path;
     println!("File path is: {}", file_path);
-    let is_valid = validate_file(file_path);
-    if is_valid {
-        println!("YAML file is valid.");
-    } else {
-        println!("YAML file is invalid.");
-    }
+    validate_file(file_path)?;
+    Ok(())
 }
-pub fn validate_file(file_path: &str) -> bool {
+pub fn validate_file(file_path: &str) -> Result<(), ValidationError> {
     let content = match std::fs::read_to_string(file_path) {
         Ok(content) => content,
         Err(err) => {
             eprintln!("Failed to read file: {}", err);
-            return false;
+            return Err(ValidationError::FileReadError(err.to_string()));
         }
     };
 
@@ -43,47 +48,57 @@ pub fn validate_file(file_path: &str) -> bool {
         }
         Err(err) => {
             eprintln!("Failed to parse YAML into InfraConfig: {}", err);
+            return Err(ValidationError::YamlParseError(err.to_string()));
         }
     }
-
-    true
 }
 
-pub fn validate_infra_config(config: &InfraConfig) -> bool {
+pub fn validate_infra_config(config: &InfraConfig) -> Result<(), ValidationError> {
     // Validate kind
-    if !constants::SupportKind::is_valid(&config.kind) {
-        eprintln!("Invalid kind: {}", config.kind);
-        return false;
-    }
+    // if !constants::SupportKind::is_valid(&config.kind) {
+    //     eprintln!("Invalid kind: {}", config.kind);
+    //     return Err(ValidationError::InfraConfigValidationError(format!(
+    //         "Invalid kind: {}",
+    //         config.kind
+    //     )));
+    // }
 
-    if !constants::SupportCloud::is_valid(&config.cloud) {
-        eprintln!("Invalid cloud: {}", config.cloud);
-        return false;
-    }
+    // if !constants::SupportCloud::is_valid(&config.cloud) {
+    //     eprintln!("Invalid cloud: {}", config.cloud);
+    //     return false;
+    // }
 
     // Validate metadata
     if config.metadata.name.is_empty() {
         eprintln!("Metadata name cannot be empty");
-        return false;
+        return Err(ValidationError::InfraConfigValidationError(
+            "Metadata cannot be empty".to_string(),
+        ));
     }
 
     // Validate components
     if config.components.is_empty() {
         eprintln!("At least one component is required");
-        return false;
+        return Err(ValidationError::InfraConfigValidationError(
+            "At least one component is required".to_string(),
+        ));
     }
 
     for (idx, component) in config.components.iter().enumerate() {
         if component.component_type.is_empty() {
             eprintln!("Component {} has empty type", idx);
-            return false;
+            return Err(ValidationError::InfraConfigValidationError(
+                "Component type cannot be empty".to_string(),
+            ));
         }
         if component.name.is_empty() {
             eprintln!("Component {} has empty name", idx);
-            return false;
+            return Err(ValidationError::InfraConfigValidationError(
+                "Component name cannot be empty".to_string(),
+            ));
         }
     }
 
     println!("InfraConfig validation passed");
-    true
+    Ok(())
 }
