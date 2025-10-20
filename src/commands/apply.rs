@@ -45,12 +45,12 @@ pub async fn execute(config: &Config) {
     }
 }
 
-async fn create_components(name: &str, region: &str, components: &[crate::models::Component]) {
+async fn create_components(_name: &str, region: &str, components: &[crate::models::Component]) {
     for component in components {
         match component.component_type.as_str() {
             "EC2Instance" => {
                 // Create EC2 instance Terraform code
-                match create_ec2_instance(name, region, component).await {
+                match create_ec2_instance(region, component).await {
                     Ok(instance) => {
                         println!("Successfully created EC2 instance: {:?}", instance);
                     }
@@ -67,7 +67,6 @@ async fn create_components(name: &str, region: &str, components: &[crate::models
 }
 
 async fn create_ec2_instance(
-    deployment_name: &str,
     region: &str,
     component: &crate::models::Component,
 ) -> Result<aws_sdk_ec2::types::Instance, crate::aws::ec2::ec2_instance::EC2Error> {
