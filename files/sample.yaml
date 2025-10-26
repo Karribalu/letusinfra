@@ -1,0 +1,40 @@
+version: v1
+kind: Infra
+metadata:
+  name: sample
+components:
+  - type: VPC
+    name: sample-vpc
+    properties:
+      cidr: 10.0.0.0/16
+
+  - type: ECSCluster
+    name: sample-cluster
+    properties:
+      cluster_name: sample-cluster
+      size: 3
+    dependsOn:
+      - type: VPC
+        name: sample-vpc
+
+  - type: S3Bucket
+    name: sample-bucket
+    properties:
+      bucket_name: sample-bucket
+      versioning: true
+      encryption: AES256
+
+  - type: NetworkLoadBalancer
+    name: sample-nlb
+    properties:
+      load_balancer_name: sample-nlb
+      scheme: internet-facing
+      subnets:
+        - subnet-12345678
+        - subnet-87654321
+    dependsOn:
+      - type: VPC
+        name: sample-vpc
+    connectsTo:
+      - type: ECSCluster
+        name: sample-cluster

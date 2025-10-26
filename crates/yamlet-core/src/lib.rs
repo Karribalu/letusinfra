@@ -1,27 +1,26 @@
 use clap::Parser;
 use std::io::Error;
 use tracing::info;
-use tracing_subscriber;
-mod aws;
-mod commands;
-mod models;
-mod tests;
-mod utils;
+
+pub mod aws;
+pub mod commands;
+pub mod models;
+pub mod tests;
+pub mod utils;
+pub mod proto;
+pub mod provider;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-enum Config {
+pub enum Config {
     Validate(commands::validate::Config),
     Plan(commands::plan::Config),
     Apply(commands::apply::Config),
     Destroy(commands::destroy::Config),
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    tracing_subscriber::fmt::init();
-
+pub async fn run_cli() -> Result<(), Error> {
     info!("Starting Infrastructure Management CLI Tool");
     let args = Config::parse();
     match args {
