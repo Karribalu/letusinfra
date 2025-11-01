@@ -2,13 +2,11 @@ use clap::Parser;
 use std::io::Error;
 use tracing::info;
 
-pub mod aws;
 pub mod commands;
 pub mod models;
-pub mod tests;
-pub mod utils;
 pub mod proto;
 pub mod provider;
+pub mod utils;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]

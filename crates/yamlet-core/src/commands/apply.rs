@@ -1,8 +1,5 @@
-use aws_config::{BehaviorVersion, Region};
-
 use crate::{
-    aws::ec2::ec2_instance::EC2Instance, commands::validate::validate_file, models::InfraConfig,
-    utils::constants::TEMPLATES_DIR,
+    commands::validate::validate_file, models::InfraConfig,
 };
 
 #[derive(clap::Args, Debug)]
@@ -46,36 +43,5 @@ pub async fn execute(config: &Config) {
 }
 
 async fn create_components(_name: &str, region: &str, components: &[crate::models::Component]) {
-    for component in components {
-        match component.component_type.as_str() {
-            "EC2Instance" => {
-                // Create EC2 instance Terraform code
-                match create_ec2_instance(region, component).await {
-                    Ok(instance) => {
-                        println!("Successfully created EC2 instance: {:?}", instance);
-                    }
-                    Err(err) => {
-                        eprintln!("Failed to create EC2 instance: {}", err);
-                    }
-                }
-            }
-            _ => {
-                eprintln!("Unsupported component type: {}", component.component_type);
-            }
-        }
-    }
-}
-
-async fn create_ec2_instance(
-    region: &str,
-    component: &crate::models::Component,
-) -> Result<aws_sdk_ec2::types::Instance, crate::aws::ec2::ec2_instance::EC2Error> {
-    let config = aws_config::defaults(BehaviorVersion::latest())
-        .profile_name("default")
-        .region(Region::new(region.to_string()))
-        .load()
-        .await;
-    let ec2_instance = EC2Instance::from_config(&config);
-    let instance_opts = EC2Instance::opts_from_yaml(&component.properties)?;
-    ec2_instance.create_instance(&instance_opts).await
+    for component in components {}
 }

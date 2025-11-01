@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct State {
     /**
@@ -26,9 +26,13 @@ pub struct State {
      * should only compare lineage strings byte-for-byte for equality.
      */
     pub lineage: String,
-
+    /**
+        Outputs track the values of outputs from the pack
+    */
     pub outputs: BTreeMap<String, Output>,
-
+    /**
+    A Breadth-first traversal of the resource tree.
+    */
     pub resources: Vec<Resource>,
 }
 
@@ -40,8 +44,11 @@ pub struct Output {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ResourceMode {
+    #[serde(rename = "managed")]
     Managed,
+    #[serde(rename = "imported")]
     Imported,
+    #[serde(rename = "byo")]
     Byo,
 }
 
@@ -59,4 +66,5 @@ pub struct Resource {
 pub struct Instance {
     pub schema_version: String, // The schema version of the instance.
     pub attributes: BTreeMap<String, serde_json::Value>,
+    pub sensitive_attributes: BTreeMap<String, serde_json::Value>,
 }
