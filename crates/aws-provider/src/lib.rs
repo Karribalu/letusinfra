@@ -1,17 +1,16 @@
 use aws_config::BehaviorVersion;
-use prost_types::{value::Kind as PbKind, Struct as PbStruct, Value as PbValue};
+use prost_types::{Struct as PbStruct, Value as PbValue, value::Kind as PbKind};
 use std::collections::BTreeMap;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
-pub mod proto;
 pub mod tests;
 
 pub mod aws;
 
 use pb::provider_server::{Provider, ProviderServer};
-use proto::provider as pb;
 
+use plugin_sdk::provider::provider as pb;
 pub struct AwsProvider;
 
 fn pb_struct_to_json(s: &PbStruct) -> serde_json::Value {

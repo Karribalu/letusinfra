@@ -4,7 +4,6 @@ use tracing::info;
 
 pub mod commands;
 pub mod models;
-pub mod proto;
 pub mod provider;
 pub mod utils;
 

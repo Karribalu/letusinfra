@@ -3,12 +3,9 @@ use std::collections::{BTreeMap, HashMap};
 use prost_types::{value::Kind as PbKind, ListValue, Struct as PbStruct, Value as PbValue};
 use tonic::transport::{Channel, Endpoint};
 
-use crate::{
-    models::{CloudProvider, Component, Dependency, InfraConfig},
-    proto::provider::provider_client::ProviderClient,
-};
-
-use crate::proto::provider as pb;
+use crate::models::{CloudProvider, Component, Dependency, InfraConfig};
+use plugin_sdk::provider::provider::provider_client::ProviderClient;
+use plugin_sdk::provider::provider as pb;
 
 pub struct ProviderClientRegistry {
     // map of cloud name (e.g., "AWS") to gRPC endpoint URL
@@ -78,23 +75,35 @@ fn serde_yaml_to_json(value: &serde_yaml::Value) -> serde_json::Value {
 
 fn json_to_pb_value(v: serde_json::Value) -> PbValue {
     match v {
-        serde_json::Value::Null => PbValue { kind: Some(PbKind::NullValue(0)) },
-        serde_json::Value::Bool(b) => PbValue { kind: Some(PbKind::BoolValue(b)) },
+        serde_json::Value::Null => PbValue {
+            kind: Some(PbKind::NullValue(0)),
+        },
+        serde_json::Value::Bool(b) => PbValue {
+            kind: Some(PbKind::BoolValue(b)),
+        },
         serde_json::Value::Number(n) => {
             let f = n.as_f64().unwrap_or(0.0);
-            PbValue { kind: Some(PbKind::NumberValue(f)) }
+            PbValue {
+                kind: Some(PbKind::NumberValue(f)),
+            }
         }
-        serde_json::Value::String(s) => PbValue { kind: Some(PbKind::StringValue(s)) },
+        serde_json::Value::String(s) => PbValue {
+            kind: Some(PbKind::StringValue(s)),
+        },
         serde_json::Value::Array(arr) => {
             let values = arr.into_iter().map(json_to_pb_value).collect::<Vec<_>>();
-            PbValue { kind: Some(PbKind::ListValue(ListValue { values })) }
+            PbValue {
+                kind: Some(PbKind::ListValue(ListValue { values })),
+            }
         }
         serde_json::Value::Object(map) => {
             let fields = map
                 .into_iter()
                 .map(|(k, v)| (k, json_to_pb_value(v)))
                 .collect::<BTreeMap<_, _>>();
-            PbValue { kind: Some(PbKind::StructValue(PbStruct { fields })) }
+            PbValue {
+                kind: Some(PbKind::StructValue(PbStruct { fields })),
+            }
         }
     }
 }
@@ -109,7 +118,9 @@ fn yaml_to_pb_struct(yaml: &serde_yaml::Value) -> PbStruct {
                 .collect::<BTreeMap<_, _>>();
             PbStruct { fields }
         }
-        _ => PbStruct { fields: Default::default() },
+        _ => PbStruct {
+            fields: Default::default(),
+        },
     }
 }
 
@@ -137,7 +148,6 @@ fn component_to_pb(component: &Component) -> pb::ComponentSpec {
             .unwrap_or_default(),
     }
 }
-
 
 // Added Plan RPC client function
 pub async fn grpc_plan_component(

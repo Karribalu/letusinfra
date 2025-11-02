@@ -4,7 +4,7 @@ edition = "2024"
 
 [workspace]
 resolver = "2"
-members = [ "crates/aws-provider", "crates/runner","crates/yamlet-core", "crates/plugin-sdk"
+members = ["crates/plugin-sdk", "crates/aws-provider", "crates/runner", "crates/yamlet-core"
 ]
 
 
