@@ -22,7 +22,7 @@ pub struct State {
      * never updated. This allows us to determine whether the serials
      * of two states can be meaningfully compared.
      * Apart from the guarantee that collisions between two lineages
-     * are very unlikely, this value is opaque and external callers
+     * are very unlikely, this typing is opaque and external callers
      * should only compare lineage strings byte-for-byte for equality.
      */
     pub lineage: String,

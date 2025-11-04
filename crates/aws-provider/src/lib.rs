@@ -237,6 +237,7 @@ fn map_sdk_err<E: std::fmt::Display>(e: E) -> Status {
 }
 
 pub async fn serve(addr: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
     let svc = AwsProvider;
     let addr = addr.parse()?;
     info!("aws-provider listening on {}", addr);

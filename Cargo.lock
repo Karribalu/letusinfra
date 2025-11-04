@@ -1708,6 +1708,7 @@ dependencies = [
  "prost-types 0.13.5",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tonic",
  "tonic-build 0.12.3",

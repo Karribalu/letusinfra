@@ -68,7 +68,7 @@ pub async fn grpc_apply_component(
 }
 
 fn serde_yaml_to_json(value: &serde_yaml::Value) -> serde_json::Value {
-    // Convert YAML value to JSON value via string roundtrip
+    // Convert YAML typing to JSON typing via string roundtrip
     // Safer: direct mapping when possible; here we leverage serde conversion
     serde_json::to_value(value).unwrap_or(serde_json::Value::Null)
 }

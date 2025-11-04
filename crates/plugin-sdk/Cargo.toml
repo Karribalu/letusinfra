@@ -10,6 +10,7 @@ tonic = { version = "0.12", features = ["transport"] }
 tokio = { version = "1.48.0", features = ["full"] }
 prost-types = "0.13"
 prost = "0.13"
+thiserror = "2.0.17"
 
 [build-dependencies]
 tonic-build = "0.12"

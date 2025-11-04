@@ -100,7 +100,7 @@ impl InfraConfig {
 }
 
 impl Component {
-    /// Get a property value by key
+    /// Get a property typing by key
     pub fn get_property(&self, key: &str) -> Option<&serde_yaml::Value> {
         self.properties.get(key)
     }

@@ -1,5 +1,5 @@
-mod schema;
-mod state;
+pub mod schema;
+pub mod state;
 pub mod provider;
 
 pub fn add(left: u64, right: u64) -> u64 {
