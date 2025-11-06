@@ -20,6 +20,7 @@ pub struct ResourceData {
     timeouts: ResourceTimeouts,
     meta: BTreeMap<String, String>,
 
+    // This is used for temporary storage of the new state while applying the diff
     new_state: InstanceState,
     partial: bool,
     is_new: bool,
@@ -77,7 +78,7 @@ impl ResourceData {
         self.instance_state.attributes().get(key)
     }
 
-    fn get_raw(&self, key: &str) -> (){
-        let parts = key.split('.').collect::<Vec<&str>>();
+    pub fn json_type_resource_state(&self) -> serde_json::Value {
+        serde_json::json!(self.instance_state)
     }
 }

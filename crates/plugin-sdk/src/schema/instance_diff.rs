@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
 /// [`InstanceDiff`] is the diff of a resource between one state and another
+/// The attributes are flattened with . notation
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct InstanceDiff {
     attributes: BTreeMap<String, ResourceAttrDiff>,

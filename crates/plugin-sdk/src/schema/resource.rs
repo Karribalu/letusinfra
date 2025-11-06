@@ -2,7 +2,7 @@ use crate::schema::{
     resource_data::ResourceData, resource_identity::ResourceIdentity,
     resource_timeout::ResourceTimeouts, schema::Schema,
 };
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 type SchemaFn = Box<dyn Fn() -> HashMap<String, Schema>>;
 
@@ -24,7 +24,7 @@ type DeleteFn = Box<dyn Fn(&mut ResourceData, &Option<serde_json::Value>) -> Res
 pub struct Resource {
     /// [`schema`] defines the attributes and their properties for this resource.
     /// This field or schema_fn must be provided for all resource concepts.
-    schema: HashMap<String, Schema>,
+    schema: BTreeMap<String, Schema>,
 
     /// [`schema_fn`] is an optional function that returns the schema for this resource.
     /// This field or schema must be provided for all resource concepts.Use this field insted of schema when you don't
@@ -39,7 +39,7 @@ pub struct Resource {
     /// This includes the versioned schema definitions and state upgrader functions.
     /// This applies only to managed resources.
     /// This field is optional
-    identity: ResourceIdentity,
+    identity: Option<ResourceIdentity>,
 
     /// `create` is the function that implements the create lifecycle operation for this resource.
     /// This field is required for managed resources and must be None for BYO resources.
@@ -76,4 +76,3 @@ pub struct Resource {
     /// This field is optional and can be used to provide additional context about the resource.
     description: Option<String>,
 }
-
