@@ -1,11 +1,34 @@
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+
 /// [`InstanceDiff`] is the diff of a resource between one state and another
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct InstanceDiff {
-    pub attributes: HashMap<String, String>,
-    pub diff: BTreeMap<String, ResourceAttrDiff>,
-    pub destroy: bool,
+    attributes: BTreeMap<String, ResourceAttrDiff>,
+    destroy: bool,
+    identity: HashMap<String, String>, // Used to track the resource identity changes
+}
+
+impl InstanceDiff {
+    pub fn new() -> Self {
+        InstanceDiff {
+            attributes: BTreeMap::new(),
+            destroy: false,
+            identity: HashMap::new(),
+        }
+    }
+
+    pub fn attributes(&self) -> &BTreeMap<String, ResourceAttrDiff> {
+        &self.attributes
+    }
+
+    pub fn destroy(&self) -> bool {
+        self.destroy
+    }
+
+    pub fn identity(&self) -> &HashMap<String, String> {
+        &self.identity
+    }
 }
 
 /// [`ResourceAttrDiff`] is the diff of a single attribute of a resource between one state and another

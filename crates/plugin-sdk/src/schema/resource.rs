@@ -19,7 +19,7 @@ type DeleteFn = Box<dyn Fn(&mut ResourceData, &Option<serde_json::Value>) -> Res
 ///     operations such as create, read, update, and delete
 ///     (CRUD), and optional implementation details such as
 ///     import support, upgrade state support, and difference
-///   - BYO `Resource`: Also known as a data source. An infrastructure component
+///   - BYO (Bring Your Own) `Resource`: Also known as a data source. An infrastructure component
 ///     with a schema and only the read lifecycle operation.
 pub struct Resource {
     /// [`schema`] defines the attributes and their properties for this resource.
@@ -76,3 +76,4 @@ pub struct Resource {
     /// This field is optional and can be used to provide additional context about the resource.
     description: Option<String>,
 }
+

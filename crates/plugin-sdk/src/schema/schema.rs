@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 
 // Do we need Set in this schema?
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueType {
     #[serde(rename = "string")]
     TypeString,
@@ -34,7 +34,7 @@ pub struct Schema {
     value_type: ValueType,
 
     /// The value of the resource schema
-    elem: BTreeMap<String, SchemaElem>,
+    elem: SchemaElem,
 
     /// `schema_version` is the version of the resource's schema definition.
     /// This field is None when the resource is not manager
@@ -116,7 +116,32 @@ pub struct Schema {
     force_new: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+impl PartialEq for Schema {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare all fields except the function pointers
+        // Function pointers cannot be compared, so we skip them
+        self.value_type == other.value_type
+            && self.elem == other.elem
+            && self.schema_version == other.schema_version
+            && self.min_items == other.min_items
+            && self.max_items == other.max_items
+            && self.default == other.default
+            && self.description == other.description
+            && self.conflicts_with == other.conflicts_with
+            && self.exactly_one_of == other.exactly_one_of
+            && self.atleast_one_of == other.atleast_one_of
+            && self.required_with == other.required_with
+            && self.sensitive == other.sensitive
+            && self.optional == other.optional
+            && self.required == other.required
+            && self.computed == other.computed
+            && self.force_new == other.force_new
+        // Note: validate_fn, default_fn, and state_fn are not compared
+        // as function pointers cannot be compared for equality
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum SchemaElem {
     String(String),
     Int(i64),
@@ -124,6 +149,7 @@ pub enum SchemaElem {
     Bool(bool),
     List(Vec<Schema>),
     Object(BTreeMap<String, Schema>),
+    Null,
 }
 
 pub struct SchemaBuilder {
@@ -141,7 +167,7 @@ impl SchemaBuilder {
         Self {
             schema: Schema {
                 value_type: ValueType::TypeObject,
-                elem: BTreeMap::new(),
+                elem: SchemaElem::Null,
                 schema_version: None,
                 min_items: None,
                 max_items: None,
@@ -168,7 +194,7 @@ impl SchemaBuilder {
         self
     }
 
-    pub fn elem(mut self, elem: BTreeMap<String, SchemaElem>) -> Self {
+    pub fn elem(mut self, elem: SchemaElem) -> Self {
         self.schema.elem = elem;
         self
     }
@@ -286,7 +312,7 @@ impl fmt::Debug for Schema {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Schema")
             .field("value_type", &self.value_type)
-            .field("elem_len", &self.elem.len())
+            .field("elem", &self.elem)
             .field("schema_version", &self.schema_version)
             .field("min_items", &self.min_items)
             .field("max_items", &self.max_items)

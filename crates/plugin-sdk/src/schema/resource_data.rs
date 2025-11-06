@@ -18,6 +18,11 @@ pub struct ResourceData {
     instance_state: InstanceState,
     diff: InstanceDiff,
     timeouts: ResourceTimeouts,
+    meta: BTreeMap<String, String>,
+
+    new_state: InstanceState,
+    partial: bool,
+    is_new: bool,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -35,10 +40,11 @@ impl ResourceData {
             instance_state: InstanceState::default(),
             diff: InstanceDiff::default(),
             timeouts: ResourceTimeouts::default(),
+            meta: Default::default(),
+            new_state: InstanceState::default(),
+            partial: false,
+            is_new: false,
         }
-    }
-    pub fn get(&self, key: &str) -> Option<&String> {
-        self.instance_state.attributes().get(key)
     }
 
     pub fn set_timeouts(&mut self, timeouts: ResourceTimeouts) {
@@ -59,5 +65,19 @@ impl ResourceData {
     }
     pub fn instance_state(&self) -> &InstanceState {
         &self.instance_state
+    }
+
+    /// `get` returns the data for the given key or None if the key does not exist in the schema
+    ///
+    /// If the key exists in the schema but doesn't exist in the configuration,
+    /// Then the default value for that type will be returned, For strings it will be an empty string,
+    /// for numbers it will be 0, for booleans it will be false,
+    ///
+    pub fn get(&self, key: &str) -> Option<&String> {
+        self.instance_state.attributes().get(key)
+    }
+
+    fn get_raw(&self, key: &str) -> (){
+        let parts = key.split('.').collect::<Vec<&str>>();
     }
 }
