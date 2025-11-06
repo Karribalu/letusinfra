@@ -2,6 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 
+type SchemaResult = Result<(), SchemaValidationError>;
+#[derive(thiserror::Error, Debug, PartialEq, Eq)]
+pub enum SchemaValidationError {
+    #[error("Type mismatch error: {0}")]
+    TypeMismatch(String),
+}
+
 // Do we need Set in this schema?
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ValueType {
@@ -150,6 +157,20 @@ pub enum SchemaElem {
     List(Vec<Schema>),
     Object(BTreeMap<String, Schema>),
     Null,
+}
+
+impl SchemaElem {
+    pub fn type_name(&self) -> &str {
+        match self {
+            SchemaElem::String(_) => "string",
+            SchemaElem::Int(_) => "int",
+            SchemaElem::Float(_) => "float",
+            SchemaElem::Bool(_) => "bool",
+            SchemaElem::List(_) => "list",
+            SchemaElem::Object(_) => "object",
+            SchemaElem::Null => "null",
+        }
+    }
 }
 
 pub struct SchemaBuilder {
@@ -306,6 +327,80 @@ impl Schema {
             None
         }
     }
+
+    pub fn validate_schema(&self) -> SchemaResult {
+        self.validate_value_type(&mut String::from(""))?;
+
+        Ok(())
+    }
+
+    fn validate_value_type(&self, path: &mut String) -> SchemaResult {
+        match self.value_type {
+            ValueType::TypeString => match &self.elem {
+                SchemaElem::String(_) => Ok(()),
+                _ => Err(SchemaValidationError::TypeMismatch(format!(
+                    "Expected string type but found {:?} for {}",
+                    self.elem.type_name(),
+                    path
+                ))),
+            },
+            ValueType::TypeInt => match &self.elem {
+                SchemaElem::Int(_) => Ok(()),
+                _ => Err(SchemaValidationError::TypeMismatch(format!(
+                    "Expected int type but found {:?} for {}",
+                    self.elem.type_name(),
+                    path
+                ))),
+            },
+            ValueType::TypeFloat => match &self.elem {
+                SchemaElem::Float(_) => Ok(()),
+                _ => Err(SchemaValidationError::TypeMismatch(format!(
+                    "Expected float type but found {:?} for {}",
+                    self.elem.type_name(),
+                    path
+                ))),
+            },
+            ValueType::TypeBool => match &self.elem {
+                SchemaElem::Bool(_) => Ok(()),
+                _ => Err(SchemaValidationError::TypeMismatch(format!(
+                    "Expected bool type but found {:?} for {}",
+                    self.elem.type_name(),
+                    path
+                ))),
+            },
+            ValueType::TypeList => match &self.elem {
+                SchemaElem::List(schemas) => {
+                    for (i, schema) in schemas.iter().enumerate() {
+                        schema.validate_value_type(&mut format!("{}.{}", path, i))?;
+                    }
+                    Ok(())
+                }
+                _ => Err(SchemaValidationError::TypeMismatch(format!(
+                    "Expected list type but found {:?} for {}",
+                    self.elem.type_name(),
+                    path
+                ))),
+            },
+            ValueType::TypeObject => match &self.elem {
+                SchemaElem::Object(_) => {
+                    for (key, schema) in match &self.elem {
+                        SchemaElem::Object(map) => map,
+                        _ => unreachable!(),
+                    } {
+                        schema.validate_value_type(&mut format!("{}.{}", path, key))?;
+                    }
+
+                    Ok(())
+                }
+                _ => Err(SchemaValidationError::TypeMismatch(format!(
+                    "Expected object type but found {:?}",
+                    self.elem.type_name()
+                ))),
+            },
+        }?;
+
+        Ok(())
+    }
 }
 
 impl fmt::Debug for Schema {
@@ -350,5 +445,237 @@ mod tests {
         let _ = schema.default_value();
 
         println!("Schema is {:?}", schema);
+    }
+
+    #[test]
+    fn test_validate_fn_with_valid_data() {
+        // Create a validation function that checks string length > 3
+        let validate_fn = |elem: &SchemaElem| match elem {
+            SchemaElem::String(s) => s.len() > 3,
+            _ => false,
+        };
+
+        let schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::String("valid_string".to_string()))
+            .validate_fn(validate_fn)
+            .build();
+
+        // Access the validation function
+        if let Some(validator) = &schema.validate_fn {
+            assert!(validator(&SchemaElem::String("test".to_string())));
+            assert!(validator(&SchemaElem::String("hello".to_string())));
+        }
+    }
+
+    #[test]
+    fn test_validate_fn_with_invalid_data() {
+        // Create a validation function that checks string length > 3
+        let validate_fn = |elem: &SchemaElem| match elem {
+            SchemaElem::String(s) => s.len() > 3,
+            _ => false,
+        };
+
+        let schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::String("ok".to_string()))
+            .validate_fn(validate_fn)
+            .build();
+
+        // Access the validation function
+        if let Some(validator) = &schema.validate_fn {
+            assert!(!validator(&SchemaElem::String("ok".to_string())));
+            assert!(!validator(&SchemaElem::String("no".to_string())));
+            assert!(!validator(&SchemaElem::Int(123)));
+        }
+    }
+
+    #[test]
+    fn test_schema_validation_type_match() {
+        // Test string type validation
+        let string_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::String("test".to_string()))
+            .build();
+        assert!(string_schema.validate_schema().is_ok());
+
+        // Test int type validation
+        let int_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeInt)
+            .elem(SchemaElem::Int(42))
+            .build();
+        assert!(int_schema.validate_schema().is_ok());
+
+        // Test float type validation
+        let float_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeFloat)
+            .elem(SchemaElem::Float(3.14))
+            .build();
+        assert!(float_schema.validate_schema().is_ok());
+
+        // Test bool type validation
+        let bool_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeBool)
+            .elem(SchemaElem::Bool(true))
+            .build();
+        assert!(bool_schema.validate_schema().is_ok());
+    }
+
+    #[test]
+    fn test_schema_validation_type_mismatch() {
+        // Test string type with wrong elem
+        let string_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::Int(42))
+            .build();
+        let result = string_schema.validate_schema();
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            SchemaValidationError::TypeMismatch(_)
+        ));
+
+        // Test int type with wrong elem
+        let int_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeInt)
+            .elem(SchemaElem::String("not an int".to_string()))
+            .build();
+        let result = int_schema.validate_schema();
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            SchemaValidationError::TypeMismatch(_)
+        ));
+
+        // Test bool type with wrong elem
+        let bool_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeBool)
+            .elem(SchemaElem::Float(3.14))
+            .build();
+        let result = bool_schema.validate_schema();
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            SchemaValidationError::TypeMismatch(_)
+        ));
+    }
+
+    #[test]
+    fn test_validate_fn_with_numeric_range() {
+        // Create a validation function for integers in range 0-100
+        let validate_int_range = |elem: &SchemaElem| match elem {
+            SchemaElem::Int(i) => *i >= 0 && *i <= 100,
+            _ => false,
+        };
+
+        let schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeInt)
+            .elem(SchemaElem::Int(50))
+            .validate_fn(validate_int_range)
+            .build();
+
+        if let Some(validator) = &schema.validate_fn {
+            // Valid values
+            assert!(validator(&SchemaElem::Int(0)));
+            assert!(validator(&SchemaElem::Int(50)));
+            assert!(validator(&SchemaElem::Int(100)));
+
+            // Invalid values
+            assert!(!validator(&SchemaElem::Int(-1)));
+            assert!(!validator(&SchemaElem::Int(101)));
+        }
+    }
+
+    #[test]
+    fn test_validate_fn_with_pattern_matching() {
+        // Create a validation function that checks if string starts with "aws_"
+        let validate_prefix = |elem: &SchemaElem| match elem {
+            SchemaElem::String(s) => s.starts_with("aws_"),
+            _ => false,
+        };
+
+        let schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::String("aws_instance".to_string()))
+            .validate_fn(validate_prefix)
+            .build();
+
+        if let Some(validator) = &schema.validate_fn {
+            // Valid values
+            assert!(validator(&SchemaElem::String("aws_instance".to_string())));
+            assert!(validator(&SchemaElem::String("aws_bucket".to_string())));
+            assert!(validator(&SchemaElem::String("aws_".to_string())));
+
+            // Invalid values
+            assert!(!validator(&SchemaElem::String("gcp_instance".to_string())));
+            assert!(!validator(&SchemaElem::String("azure_vm".to_string())));
+            assert!(!validator(&SchemaElem::String("".to_string())));
+        }
+    }
+
+    #[test]
+    fn test_list_schema_validation() {
+        // Create a list schema with nested string schemas
+        let item_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::String("item".to_string()))
+            .build();
+
+        let list_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeList)
+            .elem(SchemaElem::List(vec![item_schema]))
+            .build();
+
+        assert!(list_schema.validate_schema().is_ok());
+    }
+
+    #[test]
+    fn test_object_schema_validation() {
+        // Create an object schema with nested schemas
+        let mut fields = BTreeMap::new();
+
+        fields.insert(
+            "name".to_string(),
+            SchemaBuilder::new()
+                .value_type(ValueType::TypeString)
+                .elem(SchemaElem::String("".to_string()))
+                .build(),
+        );
+
+        fields.insert(
+            "age".to_string(),
+            SchemaBuilder::new()
+                .value_type(ValueType::TypeInt)
+                .elem(SchemaElem::Int(0))
+                .build(),
+        );
+
+        let object_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeObject)
+            .elem(SchemaElem::Object(fields))
+            .build();
+
+        assert!(object_schema.validate_schema().is_ok());
+    }
+
+    #[test]
+    fn test_nested_validation_error() {
+        // Create a list schema with an invalid nested schema (type mismatch)
+        let invalid_item = SchemaBuilder::new()
+            .value_type(ValueType::TypeString)
+            .elem(SchemaElem::Int(42)) // Wrong type!
+            .build();
+
+        let list_schema = SchemaBuilder::new()
+            .value_type(ValueType::TypeList)
+            .elem(SchemaElem::List(vec![invalid_item]))
+            .build();
+
+        let result = list_schema.validate_schema();
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            SchemaValidationError::TypeMismatch(_)
+        ));
     }
 }
